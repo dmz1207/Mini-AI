@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-01",
+  "run_id": 41253219630,
+  "url": "https://github.com/dmz1207/Mini-AI/actions/runs/41253219630",
+  "source_commit": "d4ba8483068cc441babdbadb7a4380df48826b6c",
+  "conclusion": "success",
+  "service_assertions": 39,
+  "standalone_desktop_assertions": 5,
+  "optional_saved_reader_layer_fixture": "not present in the independent CI checkout; local count includes this additional check",
+  "release_url": "https://github.com/dmz1207/Mini-AI/releases/tag/v0.1.0",
+  "package_bytes": 580400980,
+  "package_sha256": "733f3b89c4311e06da405028e9f3549dddfd2ae4a0c118bd087dbeabaa664277"
+}
