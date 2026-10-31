@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "ocr_name": "PP-OCRv6 medium",
+  "ocr": [
+    {
+      "path": "models/ocr/det.onnx",
+      "bytes": 62119454,
+      "sha256": "92078b7355007ccfffcd4c8cd441a3afd4538904d06881b29a155e1e679907c2",
+      "urls": [
+        "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv6/det/PP-OCRv6_det_medium.onnx"
+      ]
+    },
+    {
+      "path": "models/ocr/rec.onnx",
+      "bytes": 76629984,
+      "sha256": "eef444829dbbe18d7fea59a3f6eb75647518d2b3a9568d27c92e42940204894b",
+      "urls": [
+        "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv6/rec/PP-OCRv6_rec_medium.onnx"
+      ]
+    },
+    {
+      "path": "models/ocr/keys.txt",
+      "bytes": 74947,
+      "sha256": "b5f2bfe2bdd9448429e3e82b51c789775d9b42f2403d082b00662eb77e401c5d",
+      "urls": [
+        "https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/dab3fe35379033fdcb2d0e9572fac0b36c9a9ebf/ppocr/utils/dict/ppocrv6_dict.txt"
+      ]
+    }
+  ],
+  "translation": {
+    "path": "models/translation/hy-mt2.gguf",
+    "bytes": 461860800,
+    "prepared_sha256": "e482a38ceaaf8420573483c96ddc8449922b5f5de6a8023b70316e65d41e6de7",
+    "sha256": "cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93",
+    "urls": [
+      "https://www.modelscope.cn/models/AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF/resolve/master/Hy-MT2-1.8B-1.25Bit.gguf",
+      "https://huggingface.co/AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF/resolve/0989912c0cc2d3edeeecd76171d1c7d94ee17255/Hy-MT2-1.8B-1.25Bit.gguf"
+    ]
+  },
+  "onnxruntime": {
+    "version": "1.20.1",
+    "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-win-x64-1.20.1.zip",
+    "files": [
+      {
+        "path": "runtime/onnxruntime.dll",
+        "bytes": 11569696,
+        "sha256": "4cb41e89b8bf30578e1dd95e9c40292d61974a4bfcd666409302c4f0c5aa8ce0"
+      },
+      {
+        "path": "runtime/onnxruntime_providers_shared.dll",
+        "bytes": 22048,
+        "sha256": "3b164f0019863266971843baca9551f015db7e502e2d9c4575f74c6a2bbbb78a"
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "date": "2026-11-01",
+  "platform": "Windows x64",
+  "cpu": "Intel Core i7-8565U, 4 cores / 8 threads",
+  "service_assertions": 40,
+  "standalone_desktop_assertions": 5,
+  "reader_integration_assertions": 33,
+  "native_ci_run": "https://github.com/dmz1207/Mini-AI/actions/runs/41215600743",
+  "ocr": "PP-OCRv6 medium, FP32 ONNX",
+  "translation": "Hy-MT2-1.8B stride-16, 1.25-bit",
+  "private_documents_published": false,
+  "word_visual_qa": "Two OCR DOCX outputs opened read-only in installed Word, rendered to PDF/PNG and inspected. No duplicated visible text or missing glyphs in these fixtures. LibreOffice renderer unavailable on this host.",
+  "limits": [
+    "No exhaustive OCR or translation accuracy claim",
+    "Seven real-document pages; Chinese sample is front matter, not a dense Chinese benchmark",
+    "GPU acceleration is not shipped or tested",
+    "Cold start and dense-page OCR need time; cached and fresh requests differ"
+  ]
+}
