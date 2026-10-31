@@ -80,10 +80,11 @@ jobs:
           Copy-Item inference\LICENSE package\LICENSE-llama.cpp.txt
           Copy-Item inference-results.json package\
           'c828a2e883defef95fd6121ee1586efcce89ad40' | Set-Content package\runtime-revision.txt
-          Get-FileHash package\* -Algorithm SHA256 | Format-Table | Out-File package\checksums.txt
+          $hashes = Get-ChildItem package -File | Get-FileHash -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower() + '  ' + (Split-Path $_.Path -Leaf) }
+          $hashes | Set-Content package\checksums.txt -Encoding ascii
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: minipdf-stq-windows-${{ matrix.variant }}
+          name: miniai-stq-windows-${{ matrix.variant }}
           path: package/
           retention-days: 7
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
