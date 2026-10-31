@@ -1,13 +1,13 @@
 """Adapt the pinned official Hy-MT2 GGUF metadata to the pinned STQ runtime.
 
-The upstream model predates the enum reservation in llama.cpp: tensor type 40
-was STQ1_0 in its exporter, but is NVFP4 in the runtime. The quantized tensor
+The pinned stride-16 model predates the enum reservation: tensor type 42
+was STQ1_0 in its exporter, but is Q2_0 in the runtime. The quantized tensor
 payload is left byte-for-byte unchanged. Unknown models are never patched.
 """
 import argparse,hashlib,json,math,struct
 from pathlib import Path
 
-ORIGINAL='13a33fc4f72d5c92c439a65fd343696de4ccd0485bca84de2712bc0d8cc4e773'
+ORIGINAL='cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93'
 RUNTIME='c828a2e883defef95fd6121ee1586efcce89ad40'
 
 def digest(path):
@@ -25,7 +25,7 @@ def prepare(path):
         old=json.loads(record.read_text(encoding='utf-8'))
         if before==old.get('prepared_sha256') and old.get('upstream_sha256')==ORIGINAL:
             print('Already prepared:',before);return old
-    if before!=ORIGINAL:raise ValueError('This is not the pinned, unmodified official Hy-MT2 v2 model.')
+    if before!=ORIGINAL:raise ValueError('This is not the pinned, unmodified official Hy-MT2 stride-16 model.')
     changes=[]
     with path.open('r+b') as stream:
         def number(fmt):return struct.unpack('<'+fmt,stream.read(struct.calcsize('<'+fmt)))[0]
@@ -46,15 +46,14 @@ def prepare(path):
         quantized=[]
         for _ in range(tensors):
             name=string();dimensions=[number('Q') for _ in range(number('I'))];position=stream.tell();kind=number('I');offset=number('Q')
-            if kind not in (0,14,40):raise ValueError('Unexpected tensor type '+str(kind))
-            if kind==40:changes.append((position,43));quantized.append(name)
+            if kind not in (0,14,42):raise ValueError('Unexpected tensor type '+str(kind))
+            if kind==42:changes.append((position,43));quantized.append(name)
         if len(quantized)!=224 or file_type is None:raise ValueError('Unexpected STQ tensor layout')
         changes.append((file_type,42))
         for position,kind in changes:stream.seek(position);stream.write(struct.pack('<I',kind))
-    result={'upstream_repo':'AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF','upstream_revision':'0989912c0cc2d3edeeecd76171d1c7d94ee17255','upstream_file':'Hy-MT2-1.8B-1.25bit-v2.gguf','upstream_sha256':ORIGINAL,'prepared_sha256':digest(path),'runtime_revision':RUNTIME,'metadata_tensor_type_remap':{'40':43},'metadata_file_type_remap':{'39':42},'tensor_descriptors_updated':len(quantized),'weights_changed':False}
+    result={'upstream_repo':'AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF','upstream_revision':'0989912c0cc2d3edeeecd76171d1c7d94ee17255','upstream_file':'Hy-MT2-1.8B-1.25Bit.gguf','upstream_sha256':ORIGINAL,'prepared_sha256':digest(path),'runtime_revision':RUNTIME,'metadata_tensor_type_remap':{'42':43},'metadata_file_type_remap':{'41':42},'tensor_descriptors_updated':len(quantized),'weights_changed':False}
     record.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
     print(json.dumps(result,indent=2));return result
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('model');prepare(parser.parse_args().model)
-

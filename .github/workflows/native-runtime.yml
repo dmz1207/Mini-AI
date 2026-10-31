@@ -42,10 +42,10 @@ jobs:
       - name: Download and check the exact Hy-MT2 model
         shell: pwsh
         run: |
-          $uri = 'https://huggingface.co/AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF/resolve/0989912c0cc2d3edeeecd76171d1c7d94ee17255/Hy-MT2-1.8B-1.25bit-v2.gguf'
+          $uri = 'https://huggingface.co/AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF/resolve/0989912c0cc2d3edeeecd76171d1c7d94ee17255/Hy-MT2-1.8B-1.25Bit.gguf'
           curl.exe -fL --retry 3 $uri -o model.gguf
           if ($LASTEXITCODE -ne 0) { throw 'Model download failed' }
-          if ((Get-FileHash model.gguf -Algorithm SHA256).Hash.ToLower() -ne '13a33fc4f72d5c92c439a65fd343696de4ccd0485bca84de2712bc0d8cc4e773') { throw 'Model checksum mismatch' }
+          if ((Get-FileHash model.gguf -Algorithm SHA256).Hash.ToLower() -ne 'cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93') { throw 'Model checksum mismatch' }
       - name: Adapt the pinned historical model descriptor
         shell: pwsh
         run: python tools/prepare_model.py model.gguf
@@ -65,8 +65,11 @@ jobs:
               $reply = Invoke-RestMethod http://127.0.0.1:17893/v1/chat/completions -Method Post -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 240
               $text = $reply.choices[0].message.content
               if ([string]::IsNullOrWhiteSpace($text)) { throw 'Empty translation' }
+              if ($reply.choices[0].finish_reason -ne 'stop' -or $text.Length -gt 100) { throw 'Short translation loops or reaches its token limit' }
               if ($case.target -eq 'Chinese' -and $text -notmatch '[\u4e00-\u9fff]') { throw 'Chinese inference failed' }
               if ($case.target -eq 'English' -and $text -notmatch '[a-zA-Z]') { throw 'English inference failed' }
+              if ($case.target -eq 'Chinese' -and ($text -notmatch '控制' -or $text -notmatch '稳定')) { throw 'Chinese meaning check failed' }
+              if ($case.target -eq 'English' -and ($text -notmatch 'system' -or $text -notmatch 'stable')) { throw 'English meaning check failed' }
               $results += @{source=$case.source;target=$case.target;translation=$text;usage=$reply.usage}
             }
             $results | ConvertTo-Json -Depth 8 | Set-Content inference-results.json -Encoding utf8
@@ -93,4 +96,3 @@ jobs:
           name: minipdf-stq-failure-${{ matrix.variant }}
           path: '*-err.txt'
           retention-days: 3
-
