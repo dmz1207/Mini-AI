@@ -14,5 +14,5 @@ work/
 last-error.txt
 allowed-origins.txt
 __pycache__/
+package-checksums.json
 *.part
-
