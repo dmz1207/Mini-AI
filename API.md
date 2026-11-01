@@ -1,57 +1,41 @@
-# MiniAI local API
+# Local API
 
-Start `MiniAI.exe --headless --port 0`. Read `state/connection.json` after startup:
+Mini-AI binds to **127.0.0.1**. Its portable folder contains `state/connection.json` with `url`, a random `token`, `pid` and `api_version: 1`. Keep this file private. Add `Authorization: Bearer <token>` to every request. Models stay local. The service rejects nonlocal Host headers, malformed/oversized requests and unapproved browser origins.
+
+## Health
+
+`GET /health` reports `ocr`, `ocr_fast` and translation availability and an `inference` object: engine/version, warm-up state, physical core/thread counts, selected CPU ISA, backend, actual compute type, supported target codes and GPU fallback information when applicable. A missing GPU runtime does not disable CPU translation.
+
+## Translation
+
+`POST /v1/translate`, JSON `{"text":"The control system remains stable.","target":"zh","mode":"fast"}`. `mode` is **fast** (default, beam 1) or **quality** (beam 4). Targets: **zh**, **en**, **zh-Hant**. Input: 1–10,000 characters. The response includes `text`, `target`, `truncated`, `cached`, model/backend information and elapsed worker time. Applications should report `truncated: true` rather than treating it as a complete result.
+
+For streaming, add **`"stream": true`**. Response type: `application/x-ndjson; charset=utf-8`. Each UTF-8 line is a JSON object:
 
 ```json
-{"api_version":1,"url":"http://127.0.0.1:PORT","token":"LOCAL_SECRET","pid":1234,"root":"..."}
+{"type":"partial","text":"控制系统"}
+{"type":"partial","text":"控制系统保持稳定。"}
+{"type":"done","result":{"text":"控制系统保持稳定。","target":"zh","truncated":false}}
 ```
 
-Use the returned port rather than assuming 17643. Treat the token as a local secret. Each service start creates a new token; reconnect after a restart. Multiple launches of the same package reuse its running service. Connections and requests never require a network proxy.
+`partial.text` is the **cumulative snapshot**, not a delta: replace the displayed text. A `done` event marks success. A streaming failure emits `{"type":"error","error":"..."}`; disconnection without `done` is incomplete. Closing a request cancels abandoned native decoding at its next token callback. The next selection can then proceed. New clients also accept a final non-streaming response from an older pack.
 
-```python
-import base64, json, urllib.request
-from pathlib import Path
+Fast emits token snapshots; quality emits completed sentences/segments. Quality cancellation takes effect after the current bounded segment finishes. Complete results and identical segments are cached in bounded memory; cache entries are separated by mode and language. The API does not accept arbitrary executable/model paths or generation settings.
 
-connection = json.loads(Path('MiniAI/state/connection.json').read_text(encoding='utf-8'))
-opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+## OCR
 
-def call(path, body=None):
-    data = None if body is None else json.dumps(body, ensure_ascii=False).encode('utf-8')
-    request = urllib.request.Request(connection['url'] + path, data=data, headers={
-        'Authorization': 'Bearer ' + connection['token'],
-        'Content-Type': 'application/json; charset=utf-8',
-    })
-    with opener.open(request, timeout=660) as reply:
-        return json.loads(reply.read())
+`POST /v1/ocr`, JSON `{"image_base64":"<PNG/JPEG bytes encoded as Base64>"}`. Optional `"mode":"fast"` selects tiny; omitted or `"quality"` selects medium. Missing fast files fall back to medium. The response reports actual `mode` and `model`. Maximum decoded image: 24 megapixels. Returns `text`, `width`, `height` and `lines` containing `text`, `confidence`, and four normalized `box` points. Desktop photo import also handles EXIF rotation and bounds large images. OCR text can be edited, selected, copied or translated.
 
-print(call('/health'))
-print(call('/v1/translate', {'text': 'The system remains stable.', 'target': 'zh'}))
-image = base64.b64encode(Path('scan.png').read_bytes()).decode('ascii')
-print(call('/v1/ocr', {'image_base64': image})['text'])
-```
+## Saved results and lifecycle
 
-Windows PowerShell can call the same service without installing Python:
+Inference endpoints do not save instant results. `POST /v1/results` with `{ "kind":"ocr", "text":"..." }` or `{ "kind":"translation", "source":"...", "target":"zh", "text":"..." }` saves a normal result to the sibling **MiniAI Results** folder (or `MINIAI_RESULTS_DIR`). Returns `saved` and `file`; arbitrary output paths are not accepted.
 
-```powershell
-$connection = Get-Content .\MiniAI\state\connection.json -Raw -Encoding UTF8 | ConvertFrom-Json
-$body = @{text='The system remains stable.';target='zh'} | ConvertTo-Json
-Invoke-RestMethod ($connection.url+'/v1/translate') -Method Post `
-  -Headers @{Authorization=('Bearer '+$connection.token)} `
-  -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($body))
-```
+Mini PDF and desktop windows hold exclusive `state/clients/*.lock` file leases. Closing one client sends `POST /v1/client-release` with `{}`. The service retires after the last client and active request finish. Portable cleanup waits for all launcher/service/client leases and deletes only unchanged manifest-owned files; unknown/modified files survive. `--extract-only` does not clean up.
 
-OCR returns `text`, image `width`/`height` and `lines`. Each line has `text`, a model `confidence`, and four `box` points in normalized image coordinates, starting at top-left along the detected text direction. Coordinates are clamped to the image bounds. Coordinates refer to the supplied image, not PDF points. Confidence is a model score, not a calibrated probability of exact transcription.
+## Shutdown and browser access
 
-Translation returns `text`, `target`, `model`, `truncated`, `cached` (result-cache hit), and `kv_cached_tokens` (common native prompt tokens reused on inference). Cache hits skip generation and report zero native reused tokens for that request. Cache entries are memory-only and bounded to 32. Supported target codes: `zh`, `en`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `pt`, `it`, `zh-Hant`. The same model is reused; no additional language download. Input is limited to 10,000 characters per request; for predictable latency and context capacity, split long text into short paragraphs (Mini PDF uses at most 900 characters per part). If `truncated` is true, shorten and retry. Do not silently use an incomplete result.
+`POST /v1/shutdown` with `{}` ends the service and its owned worker process. `429` means the two request slots are occupied; retry briefly or cancel old work. Headless service stops after ten idle minutes.
 
-Errors are JSON with an `error` string: 400 invalid input/inference failure, 401 invalid token, 403 disallowed Host/origin, 404 unknown route, 405 invalid method and 429 busy. Up to two computing requests are admitted; OCR and translation each serialize access to their own model. A disconnected translation client cancels the underlying generation request. OCR notices disconnects between recognition batches. A health request remains available while inference slots are busy. Authenticated shutdown remains available too.
+Browser origins are disabled by default. To opt in, place exact trusted origins, one per line, in `allowed-origins.txt` beside MiniAI.exe. Extensions still need the access token. Preflight responses allow the authenticated local API; no wildcard origin or unauthenticated inference is enabled.
 
-Requests use HTTP/1.1 and an explicit bounded Content-Length. Chunked request uploads are not accepted. Maximum JSON body: 32 MiB; OCR base64 string: 24 MiB; image: 24 megapixels. Header size and duplicate headers are checked.
-
-Browser clients must supply the same authorization header. Add the exact extension origin to `allowed-origins.txt`; OPTIONS preflight is supported for allowed origins. A content script's origin is normally the website, so prefer a browser extension background worker with explicitly configured permissions and origin. No wildcard origin is enabled. Other local programs running as the same user may read the connection file; the token is not a sandbox against a compromised local account.
-
-The API accepts images and text, never arbitrary paths or executable commands. Mini PDF renders PDF pages itself, in its isolated PDF worker, then sends images to MiniAI. PDFium is not duplicated in this service.
-
-## 中文
-
-启动后读取本机连接文件，使用实际端口与 Bearer 令牌。服务重启后令牌会变化；对方繁忙返回 429 时稍后重试。浏览器需准确来源白名单和令牌，插件建议由后台脚本调用。只支持本机，不提供公网监听、文件执行或云端上传。识别返回归一化坐标与行置信度；翻译长文应分段，并检查是否截断。
+The API is a localhost integration point, not an Internet-facing server. No external service is contacted during OCR/translation. Downloading a release/model package is a separate build/install step.

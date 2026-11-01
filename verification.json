@@ -1,53 +1,48 @@
 {
+  "version": "0.2.0",
+  "reader_version": "0.12.3",
   "date": "2026-11-01",
   "platform": "Windows x64",
-  "cpu": "Intel Core i7-8565U, 4 cores / 8 threads",
-  "service_assertions": 39,
-  "standalone_desktop_assertions": 11,
-  "reader_integration_assertions": 33,
-  "native_ci_run": "https://github.com/dmz1207/Mini-AI/actions/runs/41254989064",
-  "ocr": "PP-OCRv6 medium, FP32 ONNX",
-  "translation": "Hy-MT2-1.8B stride-16, 1.25-bit",
+  "cpu": "Intel Core i7-8565U, 4 physical cores / 8 logical threads, AVX2",
+  "assertions": {
+    "service": 45,
+    "streaming_modes": 38,
+    "standalone_desktop": 11,
+    "bubble_lifecycle": 8,
+    "image_ocr_translation": 12,
+    "reader_ocr_word": 33
+  },
+  "focused_assertions": 147,
+  "translation": "CTranslate2 4.8.4 + OPUS-MT eng-zho/zho-eng INT8",
+  "modes": {
+    "fast": {
+      "beam": 1,
+      "streaming": "tokens"
+    },
+    "quality": {
+      "beam": 4,
+      "streaming": "completed segments"
+    }
+  },
+  "ocr": {
+    "fast": "PP-OCRv6 tiny",
+    "quality": "PP-OCRv6 medium",
+    "pdf_default": "quality"
+  },
+  "service_bytes": 160768,
+  "service_sha256": "6e9268d1357a2fdf23ef8f3675029d80132f2a9e909eee35df59271c0627121a",
   "private_documents_published": false,
-  "word_visual_qa": "Two OCR DOCX outputs opened read-only in installed Word, rendered to PDF/PNG and inspected. No duplicated visible text or missing glyphs in these fixtures. LibreOffice renderer unavailable on this host.",
+  "real_discrete_gpu_tested": false,
+  "portable_validation": "20 checks passed in an isolated Unicode folder, plus 10 actual reader package-loading checks",
   "limits": [
-    "No exhaustive OCR or translation accuracy claim",
-    "Seven real-document pages; Chinese sample is front matter, not a dense Chinese benchmark",
-    "GPU acceleration is not shipped or tested",
-    "Cold start and dense-page OCR need time; cached and fresh requests differ"
+    "No exhaustive OCR/translation accuracy claim",
+    "Two translation modes share the same model; beam 4 is not guaranteed to improve every sentence",
+    "NVIDIA CUDA acceleration requires separately installed compatible CUDA libraries; AMD/Intel GPU not supported",
+    "Tiny is faster but medium remains available for difficult images",
+    "Extraction, model warmup and dense-page OCR add latency; no universal two-second guarantee"
   ],
-  "previous_functional_baseline": {
-    "service_assertions": 40,
-    "standalone_desktop_assertions": 5,
-    "native_ci_run": "https://github.com/dmz1207/Mini-AI/actions/runs/41215600743"
-  },
-  "version": "0.1.1",
-  "portable_exe_assertions": 10,
-  "reader_portable_assertions": 4,
-  "repair_total_assertions": 97,
-  "service_sha256": "4d6a7d91032a24d870712670076bfe5afad96edfbf1775de60e7afc323102212",
-  "dependency_audit": {
-    "pe_files": 9,
-    "missing": 0,
-    "path_search_used": false
-  },
-  "portable_test": {
-    "assertions": 10,
-    "checks": [
-      "empty-folder first run extracts and enables both models with system-only PATH",
-      "every extracted file matches the embedded package manifest",
-      "every native dependency is bundled or a Windows system DLL",
-      "single EXE actual English to Chinese translation",
-      "single EXE actual Chinese to English translation",
-      "single EXE actual photo OCR with bundled OCR dependencies",
-      "single EXE automatically repairs a missing OCR DLL",
-      "single EXE repairs a damaged translation executable",
-      "valid models are reused and unrelated user files preserved",
-      "no unfinished extraction files remain"
-    ],
-    "cold_start_seconds": 22.056,
-    "repair_seconds": 9.189,
-    "exe_bytes": 580405968
-  },
-  "shutdown_waits_for_disposal": true
+  "portable_exe_assertions": 20,
+  "reader_portable_assertions": 10,
+  "total_focused_assertions": 177,
+  "portable_exe_bytes": 307272058
 }

@@ -17,8 +17,9 @@ namespace MiniAI {
         readonly OfflineRuntime runtime;
         readonly OfflineRuntime.Session detector,recognizer;
         readonly string[] keys;
-        internal OfflineOcr(string root) {
-            try{runtime=new OfflineRuntime(Path.Combine(root,"runtime","onnxruntime.dll"));detector=runtime.Open(Path.Combine(root,"models","ocr","det.onnx"));recognizer=runtime.Open(Path.Combine(root,"models","ocr","rec.onnx"));var chars=new List<string>{""};chars.AddRange(File.ReadAllLines(Path.Combine(root,"models","ocr","keys.txt"),Encoding.UTF8));chars.Add(" ");keys=chars.ToArray();}catch{Dispose();throw;}
+        internal OfflineOcr(string root,string mode="quality") {
+            string folder=Path.Combine(root,"models",mode=="fast"?"ocr-fast":"ocr");
+            try{runtime=new OfflineRuntime(Path.Combine(root,"runtime","onnxruntime.dll"));detector=runtime.Open(Path.Combine(folder,"det.onnx"));recognizer=runtime.Open(Path.Combine(folder,"rec.onnx"));var chars=new List<string>{""};chars.AddRange(File.ReadAllLines(Path.Combine(folder,"keys.txt"),Encoding.UTF8));chars.Add(" ");keys=chars.ToArray();}catch{Dispose();throw;}
         }
         static float[] Pixels(Bitmap source,int width,int height,bool detection) {
             using(var image=new Bitmap(width,height,PixelFormat.Format24bppRgb)) {

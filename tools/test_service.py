@@ -21,8 +21,8 @@ def run(root,output,translation=False):
             with opener.open(urllib.request.Request(info['url']+path,data=payload,headers=h),timeout=660) as reply:
                 return reply.status,json.loads(reply.read()),dict(reply.headers)
         except urllib.error.HTTPError as error:return error.code,json.loads(error.read()),dict(error.headers)
-    def ocr(image,label):
-        start=time.perf_counter();code,result,_=request('/v1/ocr',{'image_base64':base64.b64encode(image.read_bytes()).decode()})
+    def ocr(image,label,mode='quality'):
+        start=time.perf_counter();code,result,_=request('/v1/ocr',{'image_base64':base64.b64encode(image.read_bytes()).decode(),'mode':mode})
         check(code==200,label+' completes');result['seconds']=round(time.perf_counter()-start,3)
         (output/(label+'.json')).write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8');return result
     check(request('/health')[1].get('name')=='MiniAI','authenticated health endpoint')
@@ -51,6 +51,13 @@ def run(root,output,translation=False):
     image.transpose(Image.Transpose.ROTATE_90).save(output/'photo-oriented.jpg',quality=95,exif=exif)
     result=ocr(path,'bilingual')
     check('control system remains stable' in result['text'] and '中英文翻译' in result['text'],'Chinese and English printed text')
+    check(result['mode']=='quality' and result['model']=='PP-OCRv6 medium','PDF/default-quality OCR retains the medium model')
+    check(request('/health')[1].get('ocr_fast') is True,'fast OCR capability is reported')
+    fast=ocr(path,'fast-bilingual','fast')
+    check('control system remains stable' in fast['text'] and '中英文翻译' in fast['text'],'tiny OCR recognizes the bilingual fast fixture')
+    check(fast['mode']=='fast' and fast['model']=='PP-OCRv6 tiny','fast requests report the tiny model actually used')
+    check(all(0<=p[0]<=1 and 0<=p[1]<=1 for line in fast['lines'] for p in line['box']),'fast OCR coordinates are bounded')
+    check(request('/v1/ocr',{'image_base64':'invalid','mode':'unsupported'})[0]==400,'invalid OCR modes are rejected')
     clipped=output/'edge-crop.png';image.crop((50,50,1250,210)).save(clipped);result=ocr(clipped,'edge-crop')
     check('control system' in result['text'],'screen crop recognizes text near its boundary')
     check(all(0<=p[0]<=1 and 0<=p[1]<=1 for line in result['lines'] for p in line['box']),'OCR coordinates remain bounded when a text box crosses the crop edge')
@@ -86,12 +93,13 @@ def run(root,output,translation=False):
             print('TRANSLATION:',translated.encode('unicode_escape').decode(),'SECONDS',duration,flush=True)
         start=time.perf_counter();_,cached,_=request('/v1/translate',{'text':cases[0][0],'target':'zh'})
         check(cached.get('cached') is True and time.perf_counter()-start<2,'repeated translation uses the shared in-memory result cache')
-        for code,needle in [('de','stabil'),('fr','stable'),('ja','安定')]:
+        for code,needle in [('zh-Hant','穩定')]:
             _,reply,_=request('/v1/translate',{'text':'The control system remains stable.','target':code})
             check(needle in reply.get('text','').lower() and not reply.get('truncated'),'additional target '+code+' preserves the stability statement')
             (output/('translation-'+code+'.json')).write_text(json.dumps(reply,ensure_ascii=False,indent=2),encoding='utf-8')
-        _,reply,_=request('/v1/translate',{'text':'The control system remains stable under bounded disturbances.','target':'zh'})
-        check(reply.get('kv_cached_tokens',0)>0,'persistent native worker reuses the common prompt KV cache')
+        _,health,_=request('/health')
+        check(health['inference']['warmed'] and health['inference']['beam_size']==1,'persistent worker is prewarmed and uses greedy decoding')
+        check(health['inference']['threads']==health['inference']['physical_cores'],'CPU inference uses the physical core count')
     (output/'checks.json').write_text(json.dumps({'passed':len(checks),'checks':checks},ensure_ascii=False,indent=2),encoding='utf-8')
     print('Assertions:',len(checks),flush=True)
 

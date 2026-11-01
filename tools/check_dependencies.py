@@ -39,10 +39,17 @@ def imports(path):
             result.add(name(rva if flags&1 else rva-base));pos+=32
     return sorted(result)
 
-def system(name):return name in SYSTEM or name.startswith(('api-ms-win-','ext-ms-win-'))
+def system(name):return name in SYSTEM or name in ('propsys.dll','imagehlp.dll') or name.startswith(('api-ms-win-','ext-ms-win-'))
 
 def check(paths,system_only=False):
     records=[];missing=[];visited=set()
+    # Match only explicit runtime search directories used by Python, NumPy and MiniAI.
+    search=[]
+    for file in paths:
+        for parent in Path(file).resolve().parents:
+            if parent.name=='runtime':
+                search.extend([parent,parent/'translation-ct2',parent/'translation-ct2/packages/ctranslate2',parent/'translation-ct2/packages/numpy.libs']);break
+    shared={p.name.lower():p for folder in search if folder.is_dir() for p in folder.iterdir() if p.is_file()}
     def visit(path):
         path=path.resolve()
         if path in visited:return
@@ -51,6 +58,7 @@ def check(paths,system_only=False):
         for name in names:
             if system(name):continue
             if not system_only and name in siblings:visit(siblings[name])
+            elif not system_only and name in shared:visit(shared[name])
             else:missing.append({'file':str(path),'dependency':name})
     for path in paths:visit(Path(path))
     if missing:raise ValueError('Unbundled native dependencies: '+json.dumps(missing))
@@ -58,7 +66,7 @@ def check(paths,system_only=False):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path);parser.add_argument('--file',type=Path);parser.add_argument('--system-only',action='store_true');parser.add_argument('--output',type=Path);args=parser.parse_args()
-    paths=[args.file] if args.file else [p for p in args.root.rglob('*') if p.suffix.lower() in ('.exe','.dll') and 'work' not in p.relative_to(args.root).parts and 'state' not in p.relative_to(args.root).parts]
+    paths=[args.file] if args.file else [p for p in args.root.rglob('*') if p.suffix.lower() in ('.exe','.dll','.pyd') and 'work' not in p.relative_to(args.root).parts and 'state' not in p.relative_to(args.root).parts]
     records=check(paths,args.system_only)
     if args.output:args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(records,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({'checked':len(records),'missing':0}))

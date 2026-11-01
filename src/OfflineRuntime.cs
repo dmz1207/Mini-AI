@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -49,7 +49,7 @@ namespace MiniAI {
             internal Session(OfflineRuntime owner,string path) {
                 runtime=owner;IntPtr options=IntPtr.Zero;
                 try {
-                    owner.Check(owner.Fn<OutFn>(10)(out options));owner.Check(owner.Fn<SettingFn>(23)(options,2));owner.Check(owner.Fn<SettingFn>(24)(options,Math.Max(1,Math.Min(4,Environment.ProcessorCount))));
+                    owner.Check(owner.Fn<OutFn>(10)(out options));owner.Check(owner.Fn<SettingFn>(23)(options,2));owner.Check(owner.Fn<SettingFn>(24)(options,Hardware.PhysicalCores));
                     owner.Check(owner.Fn<SessionFn>(7)(owner.env,Path.GetFullPath(path),options,out handle));
                     owner.Check(owner.Fn<NameFn>(36)(handle,UIntPtr.Zero,owner.allocator,out inputName));owner.Check(owner.Fn<NameFn>(37)(handle,UIntPtr.Zero,owner.allocator,out outputName));
                 }catch{Dispose();throw;}finally{if(options!=IntPtr.Zero)owner.Fn<ReleaseFn>(100)(options);}

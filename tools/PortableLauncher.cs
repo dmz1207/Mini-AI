@@ -15,7 +15,7 @@ namespace MiniAI.Portable {
     internal static class Launcher {
         static string Hex(byte[] bytes){return BitConverter.ToString(bytes).Replace("-","").ToLowerInvariant();}
         static string Digest(string file){using(var stream=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete))using(var hash=SHA256.Create())return Hex(hash.ComputeHash(stream));}
-        static string Target(string root,string relative) {
+        internal static string Target(string root,string relative) {
             if(String.IsNullOrEmpty(relative)||Path.IsPathRooted(relative)||relative.Contains(":")||relative.Contains("\\"))throw new IOException("Invalid package path.");
             string prefix=Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
             string path=Path.GetFullPath(Path.Combine(root,relative.Replace('/',Path.DirectorySeparatorChar)));
@@ -24,7 +24,7 @@ namespace MiniAI.Portable {
                 if(Directory.Exists(parent)&&(File.GetAttributes(parent)&FileAttributes.ReparsePoint)!=0)throw new IOException("Choose a regular folder for the portable package / 请放在普通文件夹中运行。");
                 if(String.Equals(parent,root,StringComparison.OrdinalIgnoreCase))break;
             }
-            if(File.Exists(path)&&(File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0)throw new IOException("Invalid package destination.");
+            if((File.Exists(path)||Directory.Exists(path))&&(File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0)throw new IOException("Invalid package destination.");
             return path;
         }
         internal static void Prepare(string root,Action<int,string> progress) {
@@ -64,22 +64,27 @@ namespace MiniAI.Portable {
         [STAThread]static int Main(string[] args) {
             bool headless=Array.IndexOf(args,"--headless")>=0,extractOnly=Array.IndexOf(args,"--extract-only")>=0;
             string home=AppDomain.CurrentDomain.BaseDirectory,root=Path.Combine(home,"MiniAI");
+            FileStream lease=null;bool prepared=false;
             try {
-                string name;using(var hash=SHA256.Create())name="Local\\MiniAI-Package-"+Hex(hash.ComputeHash(Encoding.UTF8.GetBytes(root.ToUpperInvariant())));
+                string name=PortableCleanup.PackageName(root);
                 using(var mutex=new Mutex(false,name)) {
                     bool owns=false;try{owns=mutex.WaitOne(120000);}catch(AbandonedMutexException){owns=true;}
                     if(!owns)throw new IOException("Another MiniAI package is still preparing / 另一个功能包正在准备，请稍后重试。");
                     try {
                         if(headless||extractOnly)Prepare(root,delegate{});
                         else {Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);using(var window=new Preparation(root)){Application.Run(window);if(window.Error!=null)throw window.Error;}}
+                        prepared=true;
+                        if(!extractOnly){string leases=Path.Combine(root,"state/launchers");Directory.CreateDirectory(leases);lease=new FileStream(Path.Combine(leases,Process.GetCurrentProcess().Id+"-"+Guid.NewGuid().ToString("N")+".lock"),FileMode.CreateNew,FileAccess.ReadWrite,FileShare.None,1,FileOptions.DeleteOnClose);}
                     }finally{mutex.ReleaseMutex();}
                 }
                 if(extractOnly)return 0;
                 var arguments=new StringBuilder();foreach(string arg in args){if(arguments.Length>0)arguments.Append(' ');arguments.Append(Quote(arg));}
                 var start=new ProcessStartInfo(Path.Combine(root,"MiniAI.exe"),arguments.ToString()){UseShellExecute=false,WorkingDirectory=root,CreateNoWindow=true};
-                start.EnvironmentVariables["TEMP"]=root;start.EnvironmentVariables["TMP"]=root;
+                string temp=Path.Combine(root,"state/temp");Directory.CreateDirectory(temp);File.WriteAllText(Path.Combine(temp,".MiniAI-temp"),"MiniAI temporary files");start.EnvironmentVariables["TEMP"]=temp;start.EnvironmentVariables["TMP"]=temp;
+                start.EnvironmentVariables["MINIAI_RESULTS_DIR"]=Path.Combine(home,"MiniAI Results");start.EnvironmentVariables["MINIAI_PORTABLE_EXE"]=Assembly.GetExecutingAssembly().Location;
                 using(var child=Process.Start(start)){child.WaitForExit();return child.ExitCode;}
             }catch(Exception error){string message=error.Message+"\n\nKeep the EXE in a writable folder. Close MiniAI before replacing an older package. / 请放在可写入的文件夹中，更新前关闭旧版 MiniAI。";if(headless||extractOnly){try{File.WriteAllText(Path.Combine(home,"MiniAI-portable-error.txt"),message);}catch(IOException){}catch(UnauthorizedAccessException){}}else MessageBox.Show(message,"MiniAI",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
+            finally{if(lease!=null)lease.Dispose();if(prepared&&!extractOnly)PortableCleanup.Run(root);}
         }
         sealed class Preparation:Form {
             readonly Icon applicationIcon;
@@ -88,7 +93,7 @@ namespace MiniAI.Portable {
                 applicationIcon=Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);Icon=applicationIcon;
                 Text="MiniAI";Font=new Font("Segoe UI",10);AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);ClientSize=new Size(520,155);FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;ControlBox=false;StartPosition=FormStartPosition.CenterScreen;
                 var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(20),ColumnCount=1,RowCount=3};layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(layout);
-                text=new Label{AutoSize=true,Dock=DockStyle.Fill,Text="Preparing offline OCR and translation / 准备离线 OCR 与翻译",Margin=new Padding(0,0,0,14)};layout.Controls.Add(text);bar=new ProgressBar{Dock=DockStyle.Fill,Height=22,Margin=new Padding(0,0,0,12)};layout.Controls.Add(bar);layout.Controls.Add(new Label{Text="First run extracts beside this EXE / 首次启动解包到本文件夹",AutoSize=true,Dock=DockStyle.Fill});
+                text=new Label{AutoSize=true,Dock=DockStyle.Fill,Text="Preparing offline OCR and translation / 准备离线 OCR 与翻译",Margin=new Padding(0,0,0,14)};layout.Controls.Add(text);bar=new ProgressBar{Dock=DockStyle.Fill,Height=22,Margin=new Padding(0,0,0,12)};layout.Controls.Add(bar);layout.Controls.Add(new Label{Text="Temporary files are removed on exit / 退出后自动清理临时文件",AutoSize=true,Dock=DockStyle.Fill});
                 Shown+=delegate{new Thread(delegate(){try{Prepare(root,delegate(int value,string label){BeginInvoke(new Action(delegate{bar.Value=value;text.Text=label;}));});}catch(Exception error){Error=error;}finally{BeginInvoke(new Action(Close));}}){IsBackground=true,Name="MiniAI package preparation"}.Start();};
             }
             protected override void Dispose(bool disposing){base.Dispose(disposing);if(disposing&&applicationIcon!=null)applicationIcon.Dispose();}

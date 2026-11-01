@@ -1,21 +1,29 @@
-# Pinned offline assets
+# Offline models and inference
 
-OCR uses **PP-OCRv6 medium**, replacing the initial PP-OCRv5 mobile development configuration. The final recognition and detector assets are separate ONNX models from RapidOCR v3.10.0; the dictionary comes from PaddleOCR. Their raw sizes are 76,629,984 and 62,119,454 bytes. Together that is 138,749,438 bytes (about 132.32 MiB) before the dictionary and runtime. Roughly 80 MB describes the recognizer alone, not the complete detection/recognition pipeline.
+## Translation
 
-Translation uses the official **Hy-MT2-1.8B-1.25Bit.gguf** stride-16 model at revision `0989912c0cc2d3edeeecd76171d1c7d94ee17255`, 461,860,800 bytes. It is paired with llama.cpp/STQ revision `c828a2e883defef95fd6121ee1586efcce89ad40`.
+CTranslate2 **4.8.4**, official Windows x64 wheel, with OPUS-MT **eng-zho** and **zho-eng**, original `opus-2020-07-17` archives from the University of Helsinki. Both original archives contain **CC BY 4.0**. Attribution and modifications are recorded in `licenses/OPUS-MT-ATTRIBUTION.txt`.
 
-- Original model SHA-256: `cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93`.
-- Prepared model SHA-256: `e482a38ceaaf8420573483c96ddc8449922b5f5de6a8023b70316e65d41e6de7`.
-- Metadata changes: 224 STQ tensor descriptors from 42 to 43; general file type from 41 to 42. Quantized tensor payloads remain byte-for-byte unchanged.
+Original archive sizes: 288,947,487 and 288,654,138 bytes. Downloaded files are build inputs; they are excluded from distribution. INT8 conversion plus configuration, vocabularies and SentencePiece tokenizers totals **171,387,305 bytes**. All original and converted SHA-256 values are pinned in `assets.json`. Conversion is reproducible with the embedded runtime and does not require PyTorch or Transformers. English-to-Chinese uses the required `>>cmn_Hans<<` / `>>cmn_Hant<<` source language token. SentencePiece loads model bytes directly to support Unicode Windows folder names.
 
-Do not use an arbitrary GGUF with the same model family name. The `-v2` file has a different historical encoding; a type-number rewrite made it load but produced repeated garbage with this runtime. That combination was rejected. The adapter accepts only the pinned original hash and leaves unknown models untouched. The final source records this failure rather than claiming that successful loading or quantization arithmetic proves translation quality.
+**Fast** uses beam size **1**, **High quality** uses **4**. Fast streams token snapshots; quality streams completed source segments because CTranslate2 callbacks require beam 1. The same weights are used, without a second translation model. Separate mode/target/text cache keys prevent mixing modes. No score/attention outputs, one translation worker, intra-op threads equal to the physical CPU core count. Long inputs are split at sentence/word/token boundaries (up to 192 source tokens per decoding segment). The output cap scales with input length, up to 512 tokens; reaching it is reported as truncated rather than silently accepted. The API accepts up to 10,000 characters per request; the workspaces split longer inputs.
 
-The full offline download is larger than the reader: it includes the OCR models, translation weights, CPU inference executables and required licenses. Mini PDF itself keeps its approximately 3 MiB executable. No model downloads occur during normal OCR/translation calls; first install or extract the independent package.
+Both models are loaded and warmed in a background process. They persist across calls and are released after ten idle minutes. A combined LRU cache keeps up to 512 complete translations/segments, bounded to 300,000 output characters. No translation cache is written to disk. Decoder attention/KV state belongs to its source input; different selections do not share incompatible decoder state. Cross-request acceleration comes from model reuse and exact text/segment caches.
 
-Use [assets.json](assets.json) for URLs, exact hashes and sizes. `tools/fetch_models.py` is standard-library Python developer tooling and tries direct connections first, falling back to a configured proxy only when needed. Every download is checked before use. End users can double-click MiniAI-Portable.exe or extract the release ZIP and do not need Python. The wrapper uses the same compressed model bytes and SHA-256 manifest without additional quantization or reduced OCR precision.
+The official wheel dispatches supported CPU instructions automatically (including AVX2/AVX-512). `CT2_FORCE_CPU_ISA` is left unset by the application. The local machine selects **AVX2**. CPU computation uses **INT8/FP32**, with the actual compute type reported in `/health`.
 
-The corrected Windows native build explicitly disables `LLAMA_OPENSSL`, BoringSSL and LibreSSL. It serves authenticated loopback HTTP, so no OpenSSL DLL is needed. Both CPU variants must import only Windows system DLLs and pass an isolated startup before real model inference. ONNX Runtime's four required Microsoft CRT DLLs are included app-locally. `tools/check_dependencies.py` checks regular and delayed imports recursively without using PATH or installed third-party runtimes.
+NVIDIA devices are inspected using the installed driver. The largest-memory NVIDIA device is tried first. CUDA initialization and a real warm-up kernel must succeed before the backend is advertised as accelerated. The default pack does not include CUDA/cuBLAS; compatible **CUDA 12** libraries installed on the machine or placed in `MiniAI/runtime/cuda` are discovered automatically. Missing libraries, insufficient drivers or an inference failure trigger CPU fallback. AMD/Intel GPU backends are not shipped. No local physical discrete-GPU performance result is claimed.
 
-## 中文
+The small OPUS models prioritize latency and package size. Terminology and complex scientific phrasing may be weaker than the previous Hy-MT2 LLM. The new default is Chinese/English; older releases retain the earlier multilingual model. This is not OCR or mathematical formula recognition.
 
-最终使用 PP-OCRv6 medium，完整检测与识别约 138.7 MB；翻译权重约 461.9 MB，另加运行库。模型放在独立包中，不增加阅读器主 EXE。固定模型文件、原生内核和校验值，避免同名但格式不兼容的模型静默替换。历史 GGUF 只改类型编号描述，不改模型参数；第一次开发中发现的 `-v2` 输出异常已排除，不能用“加载成功”冒充翻译质量通过。
+## OCR
+
+**PP-OCRv6 medium**, detection + Chinese/English recognition, FP32 ONNX, about **138.82 MB** of model/dictionary files. **ONNX Runtime 1.20.1 CPU** and its app-local dependencies are bundled. OCR intra-op threads also follow the physical core count. OCR and translation share the local authenticated API, but their model weights and runtime backends remain separate.
+
+A second **PP-OCRv6 tiny** detector/recognizer/dictionary adds **6,346,587 bytes** for fast screenshots/photos. The tiny-specific dictionary is pinned separately. API OCR defaults to **quality/medium**, preserving PDF searchable-layer and Word-export behavior; callers can choose `mode: fast`. Older packs without tiny fall back to medium and report the actual OCR mode. Both OCR models unload after five idle minutes.
+
+Printed scans, photographs and screenshots are supported. Dense/rotated layouts, handwriting, mathematical notation, uncommon fonts and low-quality images can fail. See actual fixture coverage in `Verification.md`.
+
+## Runtime and packaging
+
+The package includes a private Python **3.13.17** embeddable runtime, CTranslate2, SentencePiece **0.2.2**, NumPy **2.5.4** and PyYAML **6.0.3**. Users do not install Python or packages. Build inputs, tests, headers, type stubs and unused cuDNN binaries are excluded from the portable payload; required notices are retained. The native import audit includes DLL, EXE and PYD files and the isolated test uses a system-only PATH.

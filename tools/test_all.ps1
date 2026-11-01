@@ -3,6 +3,7 @@ $ErrorActionPreference='Stop'
 $output=Join-Path $Root 'work\tests'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $env:TEMP=$output; $env:TMP=$output; $env:PYTHONDONTWRITEBYTECODE='1'
+$env:MINIAI_RESULTS_DIR=Join-Path $output 'results'
 $process=Start-Process -FilePath (Join-Path $Root 'MiniAI.exe') -ArgumentList '--headless --port 0' -WorkingDirectory $Root -WindowStyle Hidden -PassThru
 $connection=$null
 try {
@@ -17,7 +18,9 @@ try {
     if(-not $connection){throw 'The local test service did not start.'}
     & $Python (Join-Path $PSScriptRoot 'test_service.py') --root $Root --output $output --translation
     if($LASTEXITCODE -ne 0){throw 'Service integration checks failed.'}
-    if($Desktop){& (Join-Path $PSScriptRoot 'test_desktop.ps1') -Root $Root -OutputDirectory (Join-Path $output 'desktop')}
+    & $Python (Join-Path $PSScriptRoot 'test_streaming.py') --root $Root --output $output
+    if($LASTEXITCODE -ne 0){throw 'Streaming checks failed.'}
+    if($Desktop){& (Join-Path $PSScriptRoot 'test_desktop.ps1') -Root $Root -OutputDirectory (Join-Path $output 'desktop'); & (Join-Path $PSScriptRoot 'test_bubbles.ps1') -Root $Root -OutputDirectory (Join-Path $output 'bubbles'); & (Join-Path $PSScriptRoot 'test_images.ps1') -Root $Root -OutputDirectory (Join-Path $output 'images')}
 } finally {
     if($connection -and $connection.pid -eq $process.Id) {
         try{Invoke-RestMethod ($connection.url+'/v1/shutdown') -Method Post -ContentType 'application/json' -Headers @{Authorization=('Bearer '+$connection.token)} -Body '{}' | Out-Null}catch{}

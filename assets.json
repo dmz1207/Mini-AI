@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "ocr_name": "PP-OCRv6 medium",
   "ocr": [
     {
@@ -28,13 +28,65 @@
     }
   ],
   "translation": {
-    "path": "models/translation/hy-mt2.gguf",
-    "bytes": 461860800,
-    "prepared_sha256": "e482a38ceaaf8420573483c96ddc8449922b5f5de6a8023b70316e65d41e6de7",
-    "sha256": "cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93",
-    "urls": [
-      "https://www.modelscope.cn/models/AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF/resolve/master/Hy-MT2-1.8B-1.25Bit.gguf",
-      "https://huggingface.co/AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF/resolve/0989912c0cc2d3edeeecd76171d1c7d94ee17255/Hy-MT2-1.8B-1.25Bit.gguf"
+    "engine": "CTranslate2",
+    "quantization": "int8",
+    "archives": [
+      {
+        "pair": "eng-zho",
+        "url": "https://object.pouta.csc.fi/Tatoeba-MT-models/eng-zho/opus-2020-07-17.zip",
+        "sha256": "ab90e5583fa3ec46d8c5c50f106cbd65221978cd052c7e2059981439325ae24b",
+        "bytes": 288947487,
+        "files": {
+          "config.json": {
+            "sha256": "95dabd564e6abdb470e95f9106766647d8dc59e1bc2a1517d292c0cee5ca5812",
+            "bytes": 231
+          },
+          "model.bin": {
+            "sha256": "b4fedbc97c2006f6d8fc089e58a2eb7385cb66b16a5dbbf136e23e6490fcfb80",
+            "bytes": 82713357
+          },
+          "shared_vocabulary.json": {
+            "sha256": "4821251fdc0a6c9e889837b42427a90cb3240f71aef89681a5a6de525182a634",
+            "bytes": 1368888
+          },
+          "source.spm": {
+            "sha256": "5775ddc9e3ff2fae91554da56468ad35ff56edaba870fea74447bc7234bfdaa8",
+            "bytes": 806435
+          },
+          "target.spm": {
+            "sha256": "81dc94efa84e4025ef38d25d5d07429fe41e3eb29d44003f1db6fe98487b0052",
+            "bytes": 804600
+          }
+        }
+      },
+      {
+        "pair": "zho-eng",
+        "url": "https://object.pouta.csc.fi/Tatoeba-MT-models/zho-eng/opus-2020-07-17.zip",
+        "sha256": "9749101f963f552a270ff4de0c8b69c88f51c358d6b4cc87760aff2cffcf4067",
+        "bytes": 288654138,
+        "files": {
+          "config.json": {
+            "sha256": "95dabd564e6abdb470e95f9106766647d8dc59e1bc2a1517d292c0cee5ca5812",
+            "bytes": 231
+          },
+          "model.bin": {
+            "sha256": "c66ca93eaa07e094903e1ea8278282ba17a9e2f1eb7de454b7b7ce5ff112664b",
+            "bytes": 82713357
+          },
+          "shared_vocabulary.json": {
+            "sha256": "55d071d6c63a2dab993f00e77077eca76573ac6964990e2e80de7462344401fb",
+            "bytes": 1368999
+          },
+          "source.spm": {
+            "sha256": "e27a3a1b539f4959ec72ea60e453f49156289f95d4e6000b29332efc45616203",
+            "bytes": 804677
+          },
+          "target.spm": {
+            "sha256": "6a881f4717cd7265f53fea54fd3dc689c767c05338fac7a4590f3088cb2d7855",
+            "bytes": 806530
+          }
+        }
+      }
     ]
   },
   "onnxruntime": {
@@ -52,5 +104,68 @@
         "sha256": "3b164f0019863266971843baca9551f015db7e502e2d9c4575f74c6a2bbbb78a"
       }
     ]
-  }
+  },
+  "translation_runtime": [
+    {
+      "name": "Python",
+      "version": "3.13.17",
+      "url": "https://www.python.org/ftp/python/3.13.17/python-3.13.17-embed-amd64.zip",
+      "sha256": "9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38",
+      "bytes": 11441267
+    },
+    {
+      "name": "ctranslate2",
+      "version": "4.8.4",
+      "url": "https://files.pythonhosted.org/packages/37/ae/4fbe636b36fd4fd4266e309d050548c1ae0a23c88ef73ef89c6485db99d1/ctranslate2-4.8.4-cp313-cp313-win_amd64.whl",
+      "sha256": "d9523961651ac0f51e4e62d03307609ff93d828b32ae92dc8b14a7e55243f6f2",
+      "bytes": 20371182
+    },
+    {
+      "name": "sentencepiece",
+      "version": "0.2.2",
+      "url": "https://files.pythonhosted.org/packages/09/fa/d2d6369257fd2f0de616b1c7110b73fab409ef61b14f1b9e0010ed325914/sentencepiece-0.2.2-cp313-cp313-win_amd64.whl",
+      "sha256": "74f0ee601047c0c12a783088b51be4e6214a62ecd9e02278c477433cd16e0ed9",
+      "bytes": 1247987
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.4",
+      "url": "https://files.pythonhosted.org/packages/90/8c/140a40398a66b4471211be1affdb6ed24c486d581bd28d07b7f2fcb69540/numpy-2.5.4-cp313-cp313-win_amd64.whl",
+      "sha256": "8b4d2fd2d34e5f8c9235ee787de5631a37a28402b15cb80814df973d2be54129",
+      "bytes": 12566113
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "url": "https://files.pythonhosted.org/packages/97/c9/39d5b874e8b28845e4ec2202b5da735d0199dbe5b8fb85f91398814a9a46/pyyaml-6.0.3-cp313-cp313-win_amd64.whl",
+      "sha256": "79005a0d97d5ddabfeeea4cf676af11e647e41d81c9a7722a193022accdb6b7c",
+      "bytes": 154090
+    }
+  ],
+  "ocr_fast": [
+    {
+      "path": "models/ocr-fast/det.onnx",
+      "bytes": 1829618,
+      "sha256": "f42c0fbd294d95eac1a550e131b277dac97462c8025fa4b6c3cec1b7894bd3d5",
+      "urls": [
+        "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv6/det/PP-OCRv6_det_tiny.onnx"
+      ]
+    },
+    {
+      "path": "models/ocr-fast/rec.onnx",
+      "bytes": 4489813,
+      "sha256": "e16e242de5937ad92609223f19bc2aff3727ee40b095f996907c24749bad251b",
+      "urls": [
+        "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv6/rec/PP-OCRv6_rec_tiny.onnx"
+      ]
+    },
+    {
+      "path": "models/ocr-fast/keys.txt",
+      "bytes": 27156,
+      "sha256": "c5cbe34ef40c29c4df07ed012bf96569cb69a2d2a01a07027e9f13cb832bd9cd",
+      "urls": [
+        "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/paddle/PP-OCRv6/rec/PP-OCRv6_rec_tiny/ppocrv6_tiny_dict.txt"
+      ]
+    }
+  ]
 }

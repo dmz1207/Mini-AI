@@ -13,12 +13,13 @@ def package(root,output):
     root=Path(root).resolve();output=Path(output).resolve();output.parent.mkdir(parents=True,exist_ok=True)
     documents=['MiniAI.exe','README.md','README.zh-CN.md','LICENSE','API.md','Models.md','THIRD-PARTY.md','Verification.md','verification.json','assets.json']
     paths=[root/name for name in documents]
-    for folder in ('models','runtime','licenses'):
-        paths.extend(p for p in (root/folder).rglob('*') if p.is_file() and p.suffix not in ('.part','.zip'))
+    for folder in ('models/ocr','models/ocr-fast','models/translation/eng-zho','models/translation/zho-eng','runtime/translation-ct2','licenses'):
+        paths.extend(p for p in (root/folder).rglob('*') if p.is_file() and p.name!='cudnn64_9.dll' and p.suffix not in ('.part','.pyi','.h','.a','.lib') and not set(p.relative_to(root/folder).parts)&{'tests','__pycache__','include','test'})
+    paths.extend(p for p in (root/'runtime').iterdir() if p.is_file() and p.suffix.lower()=='.dll')
     for path in paths:
         if not path.is_file():raise FileNotFoundError(path)
     paths=sorted(set(paths));manifest={path.relative_to(root).as_posix():{'bytes':path.stat().st_size,'sha256':sha256(path)} for path in paths}
-    check([path for path in paths if path.suffix.lower() in ('.dll','.exe')])
+    check([path for path in paths if path.suffix.lower() in ('.dll','.exe','.pyd')])
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for path in paths:archive.write(path,'MiniAI/'+path.relative_to(root).as_posix())
         archive.writestr('MiniAI/package-checksums.json',json.dumps(manifest,indent=2)+'\n')
