@@ -6,9 +6,11 @@
 
 给 [Mini PDF](https://github.com/dmz1207/Mini-PDF)、其他桌面软件和浏览器插件调用。装好功能包后可断网使用，文档不上传，不需要管理员权限、Python、Office、云账号或订阅。
 
-服务 EXE 约 **88 KiB**。识别采用 PP-OCRv6 medium 和 ONNX Runtime；翻译采用 **Hy-MT2-1.8B 1.25-bit** 与专用 STQ 推理内核。翻译权重本身 **461,860,800 字节**，完整单 EXE 约 554 MiB，不增加 Mini PDF 主程序体积。
+服务 EXE 约 **119 KiB**，已内嵌应用图标。识别采用 PP-OCRv6 medium 和 ONNX Runtime；翻译采用 **Hy-MT2-1.8B 1.25-bit** 与专用 STQ 推理内核。翻译权重本身 **461,860,800 字节**，完整单 EXE 约 554 MiB，不增加 Mini PDF 主程序体积。
 
 ## 单 EXE，双击即用
+
+**0.1.2** 新增带 **Mini** 字样的蓝色圆角扁平图标，覆盖 EXE 文件、独立窗口、任务栏和首次准备窗口。图标内嵌，无需单独的图标文件；源码中保留 SVG 和 16–256 像素的多尺寸 ICO。
 
 下载 **[MiniAI-Portable.exe](https://github.com/dmz1207/Mini-AI/releases/latest/download/MiniAI-Portable.exe)**，放在可写入的文件夹中双击即可。识别、翻译模型及全部运行组件都在里面，无需安装 Python、单独找 DLL 或下载模型。首次运行会校验并解包到旁边的 `MiniAI` 文件夹；以后复用已有文件，并自动修复缺失或损坏的组件，保留其他用户文件。运行期间保留这个文件夹即可；解包内容另占约 610 MiB，更新旧版时先关闭 MiniAI。
 

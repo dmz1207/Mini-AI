@@ -82,13 +82,16 @@ namespace MiniAI.Portable {
             }catch(Exception error){string message=error.Message+"\n\nKeep the EXE in a writable folder. Close MiniAI before replacing an older package. / 请放在可写入的文件夹中，更新前关闭旧版 MiniAI。";if(headless||extractOnly){try{File.WriteAllText(Path.Combine(home,"MiniAI-portable-error.txt"),message);}catch(IOException){}catch(UnauthorizedAccessException){}}else MessageBox.Show(message,"MiniAI",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
         }
         sealed class Preparation:Form {
+            readonly Icon applicationIcon;
             readonly Label text;readonly ProgressBar bar;internal Exception Error;
             internal Preparation(string root) {
+                applicationIcon=Icon.ExtractAssociatedIcon(Assembly.GetExecutingAssembly().Location);Icon=applicationIcon;
                 Text="MiniAI";Font=new Font("Segoe UI",10);AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);ClientSize=new Size(520,155);FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;MinimizeBox=false;ControlBox=false;StartPosition=FormStartPosition.CenterScreen;
                 var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(20),ColumnCount=1,RowCount=3};layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(layout);
                 text=new Label{AutoSize=true,Dock=DockStyle.Fill,Text="Preparing offline OCR and translation / 准备离线 OCR 与翻译",Margin=new Padding(0,0,0,14)};layout.Controls.Add(text);bar=new ProgressBar{Dock=DockStyle.Fill,Height=22,Margin=new Padding(0,0,0,12)};layout.Controls.Add(bar);layout.Controls.Add(new Label{Text="First run extracts beside this EXE / 首次启动解包到本文件夹",AutoSize=true,Dock=DockStyle.Fill});
                 Shown+=delegate{new Thread(delegate(){try{Prepare(root,delegate(int value,string label){BeginInvoke(new Action(delegate{bar.Value=value;text.Text=label;}));});}catch(Exception error){Error=error;}finally{BeginInvoke(new Action(Close));}}){IsBackground=true,Name="MiniAI package preparation"}.Start();};
             }
+            protected override void Dispose(bool disposing){base.Dispose(disposing);if(disposing&&applicationIcon!=null)applicationIcon.Dispose();}
         }
     }
 }

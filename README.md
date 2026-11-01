@@ -6,9 +6,11 @@
 
 MiniAI is a small native Windows service for [Mini PDF](https://github.com/dmz1207/Mini-PDF), desktop tools and browser extensions. Documents stay on your computer. It runs on the CPU, needs no administrator access, Python, Office, cloud account or subscription after the offline package is installed.
 
-The service executable is about **88 KiB**. The separate offline package contains **PP-OCRv6 medium** text detection/recognition, ONNX Runtime and **Hy-MT2-1.8B 1.25-bit** translation with a pinned STQ inference engine. The translation weights alone are **461,860,800 bytes**; the complete single EXE is about 554 MiB. Models stay separate from the PDF reader.
+The service executable is about **119 KiB**, including its application icon. The separate offline package contains **PP-OCRv6 medium** text detection/recognition, ONNX Runtime and **Hy-MT2-1.8B 1.25-bit** translation with a pinned STQ inference engine. The translation weights alone are **461,860,800 bytes**; the complete single EXE is about 554 MiB. Models stay separate from the PDF reader.
 
 ## One EXE: double-click to run
+
+Version **0.1.2** adds a flat, rounded icon with **Mini** lettering to both EXEs, the desktop window, taskbar and first-run preparation window. The SVG source and 16–256 px Windows icon are included under `assets/`; the installed application needs no separate icon file.
 
 Download **[MiniAI-Portable.exe](https://github.com/dmz1207/Mini-AI/releases/latest/download/MiniAI-Portable.exe)** and put it in a writable folder. It contains both models, the service and all required runtime DLLs. First launch checks SHA-256 and extracts a `MiniAI` folder beside the EXE; subsequent launches verify and reuse those files. Damaged or missing package files are repaired. Your unrelated files are preserved. No installer, administrator access, separate model download or manual DLL installation is needed. Keep the extracted folder while using the service; it occupies about 610 MiB in addition to the download. Updating an older copy requires closing MiniAI first.
 

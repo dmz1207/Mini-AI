@@ -6,7 +6,7 @@ on:
     inputs:
       version:
         description: 'Release tag'
-        default: 'v0.1.1'
+        default: 'v0.1.2'
         required: true
       native_run:
         description: 'Successful Offline AI native runtime run ID'
@@ -96,6 +96,8 @@ jobs:
           if (-not $tag) { $tag = $env:GITHUB_REF_NAME }
           @'
           One independent offline package for Mini PDF and other Windows applications.
+
+          Mini-AI 0.1.2 adds the branded application icon to both EXEs and desktop windows.
 
           PP-OCRv6 medium OCR + Hy-MT2-1.8B 1.25-bit Chinese/English translation.
           Download MiniAI-Portable.exe and double-click. No manual DLL or model installation.

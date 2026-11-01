@@ -13,6 +13,7 @@ using MiniAI.Desktop;
 
 namespace MiniAI {
     internal sealed class Workbench : Form {
+        readonly Icon applicationIcon;
         readonly string root;
         readonly TextBox input,output;
         readonly ComboBox language;
@@ -24,6 +25,7 @@ namespace MiniAI {
         TranslationBubble bubble;
         int generation;
         internal Workbench(string directory,string address) {
+            applicationIcon=Icon.ExtractAssociatedIcon(typeof(Workbench).Assembly.Location);Icon=applicationIcon;
             root=directory;Text="MiniAI — Offline OCR & Translation";Font=new Font("Segoe UI",10);ClientSize=new Size(780,590);MinimumSize=new Size(630,460);StartPosition=FormStartPosition.CenterScreen;BackColor=Color.White;AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);
             backend=new BubbleBackend{Text=English,Translate=TranslateText,Recognize=Recognize};
             var layout=new TableLayoutPanel{Dock=DockStyle.Fill,Padding=new Padding(16),ColumnCount=1,RowCount=6};layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.Percent,50));layout.RowStyles.Add(new RowStyle(SizeType.Percent,50));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));Controls.Add(layout);
@@ -80,6 +82,6 @@ namespace MiniAI {
             new Thread(delegate(){try{string text=Recognize(bytes,delegate{return serial!=Volatile.Read(ref generation);});Post(serial,delegate{input.Text=text;output.Clear();translate.Enabled=true;cancel.Enabled=false;status.Text=String.IsNullOrWhiteSpace(text)?"No text found / 未识别出文字，请换图或重新框选。":"OCR ready: edit or select the text above / 已识别，可在上方编辑、选择、复制或翻译。";if(autoTranslate.Checked&&!String.IsNullOrWhiteSpace(text))StartTranslation();});}catch(Exception error){Post(serial,delegate{status.Text=error.Message;translate.Enabled=true;cancel.Enabled=false;});}}){IsBackground=true,Name="MiniAI photo OCR"}.Start();
         }
         void SaveText(){using(var dialog=new SaveFileDialog{Filter="UTF-8 text / 文本|*.txt",FileName="OCR.txt",DefaultExt="txt",AddExtension=true,RestoreDirectory=true})if(dialog.ShowDialog(this)==DialogResult.OK)try{File.WriteAllText(dialog.FileName,input.Text,new System.Text.UTF8Encoding(false));}catch(Exception error){status.Text=error.Message;}}
-        protected override void Dispose(bool disposing){if(disposing){Cancel();if(hotkey!=null)hotkey.Dispose();if(bubble!=null)bubble.Dispose();}base.Dispose(disposing);}
+        protected override void Dispose(bool disposing){if(disposing){Cancel();if(hotkey!=null)hotkey.Dispose();if(bubble!=null)bubble.Dispose();}base.Dispose(disposing);if(disposing&&applicationIcon!=null)applicationIcon.Dispose();}
     }
 }
