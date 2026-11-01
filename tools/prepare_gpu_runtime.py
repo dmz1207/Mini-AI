@@ -75,7 +75,7 @@ def patch(source):
         } else if (use_mmap) {'''
     if text.count(expected)!=1:raise ValueError('Pinned tensor upload changed')
     text=text.replace(expected,replacement).replace('        size_done += n_size;','        size_done += ggml_nbytes(weight->tensor);')
-    text=text.replace('#include "ggml-alloc.h"','#include "ggml-alloc.h"\n#include "ggml-impl.h"\n#include <cstdlib>')
+    text=text.replace('#include "ggml-alloc.h"','#include "ggml-alloc.h"\n#include "../ggml/src/ggml-impl.h"\n#include <cstdlib>')
     path.write_text(text,encoding='utf-8')
     print('Exact STQ-to-FP16 loader patch:',hashlib.sha256(text.encode()).hexdigest())
 
