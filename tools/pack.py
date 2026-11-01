@@ -1,6 +1,7 @@
 """Create a portable offline package without state, credentials or test files."""
 import argparse,hashlib,json,zipfile
 from pathlib import Path
+from check_dependencies import check
 
 def sha256(path):
     result=hashlib.sha256()
@@ -17,6 +18,7 @@ def package(root,output):
     for path in paths:
         if not path.is_file():raise FileNotFoundError(path)
     paths=sorted(set(paths));manifest={path.relative_to(root).as_posix():{'bytes':path.stat().st_size,'sha256':sha256(path)} for path in paths}
+    check([path for path in paths if path.suffix.lower() in ('.dll','.exe')])
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:
         for path in paths:archive.write(path,'MiniAI/'+path.relative_to(root).as_posix())
         archive.writestr('MiniAI/package-checksums.json',json.dumps(manifest,indent=2)+'\n')

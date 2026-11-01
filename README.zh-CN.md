@@ -6,11 +6,19 @@
 
 给 [Mini PDF](https://github.com/dmz1207/Mini-PDF)、其他桌面软件和浏览器插件调用。装好功能包后可断网使用，文档不上传，不需要管理员权限、Python、Office、云账号或订阅。
 
-服务 EXE 约 **77 KiB**。识别采用 PP-OCRv6 medium和 ONNX Runtime；翻译采用 **Hy-MT2-1.8B 1.25-bit** 与专用 STQ 推理内核。翻译权重本身 **461,860,800 字节**，完整离线包为数百 MB，不会塞进 Mini PDF 主 EXE。
+服务 EXE 约 **88 KiB**。识别采用 PP-OCRv6 medium 和 ONNX Runtime；翻译采用 **Hy-MT2-1.8B 1.25-bit** 与专用 STQ 推理内核。翻译权重本身 **461,860,800 字节**，完整单 EXE 约 554 MiB，不增加 Mini PDF 主程序体积。
+
+## 单 EXE，双击即用
+
+下载 **[MiniAI-Portable.exe](https://github.com/dmz1207/Mini-AI/releases/latest/download/MiniAI-Portable.exe)**，放在可写入的文件夹中双击即可。识别、翻译模型及全部运行组件都在里面，无需安装 Python、单独找 DLL 或下载模型。首次运行会校验并解包到旁边的 `MiniAI` 文件夹；以后复用已有文件，并自动修复缺失或损坏的组件，保留其他用户文件。运行期间保留这个文件夹即可；解包内容另占约 610 MiB，更新旧版时先关闭 MiniAI。
+
+独立窗口支持 **打开照片、拖入图片、Ctrl+V 粘贴图片、截图识别**。支持 JPEG、PNG、BMP、TIFF、GIF；大照片自动缩放，并处理 JPEG 拍摄方向。识别结果进入上方可编辑文本框，可修改、选中、复制、保存 TXT 或翻译；勾选“识别后翻译”可自动继续翻译。Alt+S 和“截图翻译”仍使用轻量气泡。TIFF/GIF 读取首帧。
+
+**0.1.1 修复缺 DLL**：翻译内核移除无用 OpenSSL 依赖，OCR 补齐 `msvcp140_1.dll` 等本地运行库。发布前检查所有 EXE/DLL 的依赖，并从空文件夹、仅系统 PATH 的环境实际验证识别和双向翻译。
 
 ## 在 Mini PDF 中使用
 
-1. 从[发布页](https://github.com/dmz1207/Mini-AI/releases)下载 **MiniAI-windows-x64.zip**，解压到阅读器旁边，形成 `Mini PDF.exe` 和 `MiniAI/MiniAI.exe`，保留包内 models、runtime、licenses 文件夹。
+1. 从[发布页](https://github.com/dmz1207/Mini-AI/releases)下载 **MiniAI-Portable.exe** 放在阅读器旁边；Mini PDF 0.12.1 起可自动检测并在首次使用时准备功能包。也可下载 ZIP，解压形成 `Mini PDF.exe` 和 `MiniAI/MiniAI.exe`，保留包内 models、runtime、licenses 文件夹。
 2. 打开 PDF，点上方 **OCR** 或 **翻译**。阅读器按需自动启动服务；若放在其他位置，在“工具 → 加载 MiniAI 功能包”选一次文件夹即可。
 3. 选中文字按 **Ctrl+Alt+T**，或右键“离线翻译所选文字”。没选中文字时，自动带入当前页已有文字。方向支持中英互译，长文本自动分段。
 4. 扫描页按 **Ctrl+Shift+O**：选当前页、全部或范围 → 识别 → 核对结果 → “添加可搜索文字层” → 保存 PDF。保留扫描图像外观，可选择、搜索和复制文字，也可撤销插入。

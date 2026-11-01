@@ -2,10 +2,10 @@
   "date": "2026-11-01",
   "platform": "Windows x64",
   "cpu": "Intel Core i7-8565U, 4 cores / 8 threads",
-  "service_assertions": 40,
-  "standalone_desktop_assertions": 5,
+  "service_assertions": 39,
+  "standalone_desktop_assertions": 11,
   "reader_integration_assertions": 33,
-  "native_ci_run": "https://github.com/dmz1207/Mini-AI/actions/runs/41215600743",
+  "native_ci_run": "https://github.com/dmz1207/Mini-AI/actions/runs/41254989064",
   "ocr": "PP-OCRv6 medium, FP32 ONNX",
   "translation": "Hy-MT2-1.8B stride-16, 1.25-bit",
   "private_documents_published": false,
@@ -15,5 +15,39 @@
     "Seven real-document pages; Chinese sample is front matter, not a dense Chinese benchmark",
     "GPU acceleration is not shipped or tested",
     "Cold start and dense-page OCR need time; cached and fresh requests differ"
-  ]
+  ],
+  "previous_functional_baseline": {
+    "service_assertions": 40,
+    "standalone_desktop_assertions": 5,
+    "native_ci_run": "https://github.com/dmz1207/Mini-AI/actions/runs/41215600743"
+  },
+  "version": "0.1.1",
+  "portable_exe_assertions": 10,
+  "reader_portable_assertions": 4,
+  "repair_total_assertions": 97,
+  "service_sha256": "4d6a7d91032a24d870712670076bfe5afad96edfbf1775de60e7afc323102212",
+  "dependency_audit": {
+    "pe_files": 9,
+    "missing": 0,
+    "path_search_used": false
+  },
+  "portable_test": {
+    "assertions": 10,
+    "checks": [
+      "empty-folder first run extracts and enables both models with system-only PATH",
+      "every extracted file matches the embedded package manifest",
+      "every native dependency is bundled or a Windows system DLL",
+      "single EXE actual English to Chinese translation",
+      "single EXE actual Chinese to English translation",
+      "single EXE actual photo OCR with bundled OCR dependencies",
+      "single EXE automatically repairs a missing OCR DLL",
+      "single EXE repairs a damaged translation executable",
+      "valid models are reused and unrelated user files preserved",
+      "no unfinished extraction files remain"
+    ],
+    "cold_start_seconds": 22.056,
+    "repair_seconds": 9.189,
+    "exe_bytes": 580405968
+  },
+  "shutdown_waits_for_disposal": true
 }

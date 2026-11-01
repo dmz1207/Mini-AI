@@ -28,6 +28,7 @@ namespace MiniAI {
         IntPtr module,api,env,memory,allocator;
         internal OfflineRuntime(string path) {
             try {
+                NativeDependencies.Check(path);
                 module=LoadLibraryEx(Path.GetFullPath(path),IntPtr.Zero,0x900);if(module==IntPtr.Zero)throw new IOException("Cannot load the offline OCR runtime (Windows x64 and the VC++ runtime are required).");
                 var getBase=(ApiBaseFn)Marshal.GetDelegateForFunctionPointer(GetProcAddress(module,"OrtGetApiBase"),typeof(ApiBaseFn));
                 var getApi=(GetApiFn)Marshal.GetDelegateForFunctionPointer(Marshal.ReadIntPtr(getBase()),typeof(GetApiFn));api=getApi(17);

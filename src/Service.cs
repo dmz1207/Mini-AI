@@ -34,6 +34,7 @@ namespace MiniAI {
         readonly TcpListener listener;
         readonly SemaphoreSlim slots=new SemaphoreSlim(2,2);
         readonly object ocrGate=new object();
+        readonly object stopGate=new object();
         readonly Translation translation;
         readonly System.Threading.Timer idle;
         readonly bool autoStop;
@@ -93,7 +94,7 @@ namespace MiniAI {
             }catch(Exception error){try{Reply(stream,400,new{error=error.Message},origin);}catch(IOException){}catch(ObjectDisposedException){}}
             finally{if(entered){lastRequest=DateTime.UtcNow;Interlocked.Decrement(ref active);slots.Release();}}
         }
-        public void Dispose(){if(stopped)return;stopped=true;listener.Stop();if(idle!=null)idle.Dispose();translation.Dispose();lock(ocrGate){if(ocr!=null){ocr.Dispose();ocr=null;}}}
+        public void Dispose(){lock(stopGate){if(stopped)return;stopped=true;listener.Stop();if(idle!=null)idle.Dispose();translation.Dispose();lock(ocrGate){if(ocr!=null){ocr.Dispose();ocr=null;}}}}
     }
     internal sealed class Translation : IDisposable {
         internal static readonly Dictionary<string,string> Languages=new Dictionary<string,string>{{"zh","Chinese"},{"en","English"},{"ja","Japanese"},{"ko","Korean"},{"fr","French"},{"de","German"},{"es","Spanish"},{"ru","Russian"},{"pt","Portuguese"},{"it","Italian"},{"zh-Hant","Traditional Chinese"}};
@@ -115,8 +116,10 @@ namespace MiniAI {
             if(worker!=null){worker.Dispose();worker=null;}
             foreach(string variant in new[]{"avx2","baseline"}) {
                 string executable=Path.Combine(root,"runtime","translation",variant,"llama-server.exe");if(!File.Exists(executable))continue;
+                try{NativeDependencies.Check(executable);}catch(IOException error){lastError=error.Message;continue;}
                 int port=FreePort();key=Json.Token();url="http://127.0.0.1:"+port;int threads=Math.Max(1,Math.Min(8,Environment.ProcessorCount));
                 var info=new ProcessStartInfo(executable,"-m "+Quote(Path.Combine(root,"models","translation","hy-mt2.gguf"))+" -c 4096 -t "+threads+" -ngl 0 --parallel 1 --host 127.0.0.1 --port "+port+" --api-key "+Quote(key)+" --jinja"){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8};
+                info.WorkingDirectory=Path.GetDirectoryName(executable);info.EnvironmentVariables["PATH"]=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),"System32")+";"+Environment.GetFolderPath(Environment.SpecialFolder.Windows);
                 lastError="";var process=new Process{StartInfo=info};process.OutputDataReceived+=delegate{};process.ErrorDataReceived+=delegate(object sender,DataReceivedEventArgs e){if(e.Data!=null){lock(this){lastError=(lastError+e.Data+"\n");if(lastError.Length>4096)lastError=lastError.Substring(lastError.Length-4096);}}};
                 lock(workerGate){if(disposed)throw new ObjectDisposedException("MiniAI translation");worker=process;process.Start();group=new ProcessGroup(process);process.BeginOutputReadLine();process.BeginErrorReadLine();}
                 var watch=Stopwatch.StartNew();while(!process.HasExited&&watch.ElapsedMilliseconds<90000){if(canceled()){Stop();throw new OperationCanceledException();}try{var health=Json.Request(url+"/health",null,key,2);if(Json.Get(health,"status")=="ok")return;}catch(WebException){}Thread.Sleep(200);}

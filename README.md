@@ -6,11 +6,19 @@
 
 MiniAI is a small native Windows service for [Mini PDF](https://github.com/dmz1207/Mini-PDF), desktop tools and browser extensions. Documents stay on your computer. It runs on the CPU, needs no administrator access, Python, Office, cloud account or subscription after the offline package is installed.
 
-The service executable is about **77 KiB**. The separate offline package contains **PP-OCRv6 medium** text detection/recognition, ONNX Runtime and **Hy-MT2-1.8B 1.25-bit** translation with a pinned STQ inference engine. The translation weights alone are **461,860,800 bytes**; this is a hundreds-of-megabytes package, not a tiny language model hidden inside the PDF reader.
+The service executable is about **88 KiB**. The separate offline package contains **PP-OCRv6 medium** text detection/recognition, ONNX Runtime and **Hy-MT2-1.8B 1.25-bit** translation with a pinned STQ inference engine. The translation weights alone are **461,860,800 bytes**; the complete single EXE is about 554 MiB. Models stay separate from the PDF reader.
+
+## One EXE: double-click to run
+
+Download **[MiniAI-Portable.exe](https://github.com/dmz1207/Mini-AI/releases/latest/download/MiniAI-Portable.exe)** and put it in a writable folder. It contains both models, the service and all required runtime DLLs. First launch checks SHA-256 and extracts a `MiniAI` folder beside the EXE; subsequent launches verify and reuse those files. Damaged or missing package files are repaired. Your unrelated files are preserved. No installer, administrator access, separate model download or manual DLL installation is needed. Keep the extracted folder while using the service; it occupies about 610 MiB in addition to the download. Updating an older copy requires closing MiniAI first.
+
+**Open photo** accepts JPEG, PNG, BMP, TIFF and GIF. You can also drop a photo into the window, paste a clipboard image with **Ctrl+V**, or click **Screenshot OCR**. OCR fills the editable upper text box: correct it, select text, copy it, save UTF-8 text, or translate it. **Translate after OCR** is optional. Large photos are scaled before recognition and JPEG orientation is respected. TIFF/GIF use the first frame. **Alt+S / Screen translate** retains the compact OCR-and-translation bubble.
+
+Version **0.1.1** fixes missing `libssl-3-x64.dll`, `libcrypto-3-x64.dll` and `msvcp140_1.dll`: local translation is built without OpenSSL, OCR includes its app-local Microsoft runtime, and release packaging rejects unresolved native imports. The single EXE is tested from an empty folder with a Windows-system-only PATH, including actual OCR and translation.
 
 ## Use with Mini PDF
 
-1. Download **MiniAI-windows-x64.zip** from [Releases](https://github.com/dmz1207/Mini-AI/releases), then extract it beside `Mini PDF.exe`:
+1. Put **MiniAI-Portable.exe** beside `Mini PDF.exe`. Mini PDF 0.12.1 or later detects it and prepares the package on first use. Alternatively, extract **MiniAI-windows-x64.zip** from [Releases](https://github.com/dmz1207/Mini-AI/releases) to obtain:
 
    ```text
    Mini PDF.exe
@@ -56,4 +64,3 @@ See [verification](Verification.md), [model provenance](Models.md) and [third-pa
 Run `powershell -ExecutionPolicy Bypass -File build.ps1` on Windows with the system .NET Framework 4.x compiler. The service has no NuGet dependency. Python is optional developer tooling for fetching/validating model assets and testing; it is not shipped or needed by users.
 
 `python tools/fetch_models.py --root .` downloads pinned OCR/translation assets, verifies hashes, and adapts the exact historical GGUF descriptor to the pinned STQ runtime without changing tensor payloads. Native CPU runtimes are built and tested by [GitHub Actions](.github/workflows/native-runtime.yml). The release workflow uses those tested artifacts and includes all required notices. Sources are MIT; model/runtime licenses apply separately.
-

@@ -12,7 +12,9 @@ Do not use an arbitrary GGUF with the same model family name. The `-v2` file has
 
 The full offline download is larger than the reader: it includes the OCR models, translation weights, CPU inference executables and required licenses. Mini PDF itself keeps its approximately 3 MiB executable. No model downloads occur during normal OCR/translation calls; first install or extract the independent package.
 
-Use [assets.json](assets.json) for URLs, exact hashes and sizes. `tools/fetch_models.py` is standard-library Python developer tooling and tries direct connections first, falling back to a configured proxy only when needed. Every download is checked before use. End users can simply extract the release ZIP and do not need Python.
+Use [assets.json](assets.json) for URLs, exact hashes and sizes. `tools/fetch_models.py` is standard-library Python developer tooling and tries direct connections first, falling back to a configured proxy only when needed. Every download is checked before use. End users can double-click MiniAI-Portable.exe or extract the release ZIP and do not need Python. The wrapper uses the same compressed model bytes and SHA-256 manifest without additional quantization or reduced OCR precision.
+
+The corrected Windows native build explicitly disables `LLAMA_OPENSSL`, BoringSSL and LibreSSL. It serves authenticated loopback HTTP, so no OpenSSL DLL is needed. Both CPU variants must import only Windows system DLLs and pass an isolated startup before real model inference. ONNX Runtime's four required Microsoft CRT DLLs are included app-locally. `tools/check_dependencies.py` checks regular and delayed imports recursively without using PATH or installed third-party runtimes.
 
 ## 中文
 

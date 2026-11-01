@@ -46,7 +46,10 @@ def run(root,output,translation=False):
     image=Image.new('RGB',(1800,700),'white');draw=ImageDraw.Draw(image)
     en=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',48);zh=ImageFont.truetype('C:/Windows/Fonts/msyh.ttc',48)
     for x,y,text,font in [(70,70,'The control system remains stable.',en),(70,160,'Offline OCR and Chinese-English translation.',en),(70,290,'离线文字识别与中英文翻译。',zh),(70,390,'多智能体系统的一致性控制。',zh),(70,510,'Equation (12): x = 1.25, y = 0.5',en)]:draw.text((x,y),text,font=font,fill='black')
-    path=output/'ocr-bilingual.png';image.save(path);result=ocr(path,'bilingual')
+    path=output/'ocr-bilingual.png';image.save(path)
+    exif=Image.Exif();exif[274]=6
+    image.transpose(Image.Transpose.ROTATE_90).save(output/'photo-oriented.jpg',quality=95,exif=exif)
+    result=ocr(path,'bilingual')
     check('control system remains stable' in result['text'] and '中英文翻译' in result['text'],'Chinese and English printed text')
     clipped=output/'edge-crop.png';image.crop((50,50,1250,210)).save(clipped);result=ocr(clipped,'edge-crop')
     check('control system' in result['text'],'screen crop recognizes text near its boundary')
