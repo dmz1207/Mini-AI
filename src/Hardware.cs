@@ -5,6 +5,16 @@ namespace MiniAI {
     internal static class Hardware {
         [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetLogicalProcessorInformationEx(int relationship,IntPtr buffer,ref uint size);
         internal static readonly int PhysicalCores=CountCores();
+        internal static readonly int LogicalThreads=Math.Max(1,Environment.ProcessorCount);
+        // Default to physical cores. Extra SMT threads can slow the STQ decode
+        // loop; the measured laptop case was faster with four than eight.
+        internal static readonly int InferenceThreads=ConfiguredThreads();
+        static int ConfiguredThreads() {
+            int configured;
+            if(Int32.TryParse(Environment.GetEnvironmentVariable("MINIAI_TRANSLATION_THREADS"),out configured)&&configured>0)
+                return Math.Max(1,Math.Min(64,configured));
+            return Math.Max(1,Math.Min(64,PhysicalCores));
+        }
         static int CountCores() {
             uint size=0;GetLogicalProcessorInformationEx(0,IntPtr.Zero,ref size);if(size==0||size>1024*1024)return Math.Max(1,Environment.ProcessorCount);
             IntPtr buffer=Marshal.AllocHGlobal((int)size);

@@ -26,7 +26,8 @@ def build(package,stub,output):
     with zipfile.ZipFile(output) as final:
         manifest=json.loads(final.read('MiniAI/package-checksums.json'))
         if final.testzip() is not None:raise ValueError('Single EXE payload CRC failed')
-        if len(final.namelist())!=len(manifest)+1:raise ValueError('Unexpected package contents')
+        extra=1 if 'MiniAI/portable-codecs.json' in final.namelist() else 0
+        if len(final.namelist())!=len(manifest)+1+extra:raise ValueError('Unexpected package contents')
     record={'bytes':output.stat().st_size,'sha256':sha256(output),'files':len(manifest)}
     output.with_suffix('.json').write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8');print(json.dumps(record))
 

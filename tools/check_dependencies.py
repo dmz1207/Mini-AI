@@ -48,7 +48,7 @@ def check(paths,system_only=False):
     for file in paths:
         for parent in Path(file).resolve().parents:
             if parent.name=='runtime':
-                search.extend([parent,parent/'translation-ct2',parent/'translation-ct2/packages/ctranslate2',parent/'translation-ct2/packages/numpy.libs']);break
+                search.extend([parent,parent/'translation',parent/'translation/avx2',parent/'translation/baseline']);break
     shared={p.name.lower():p for folder in search if folder.is_dir() for p in folder.iterdir() if p.is_file()}
     def visit(path):
         path=path.resolve()

@@ -1,5 +1,112 @@
 {
-  "format": 2,
+  "format": 4,
+  "translation": {
+    "engine": "Hy-MT2 1.8B 1.25-bit GGUF",
+    "license": "Apache-2.0",
+    "upstream_repo": "AngelSlim/Hy-MT2-1.8B-1.25Bit-GGUF",
+    "upstream_revision": "0989912c0cc2d3edeeecd76171d1c7d94ee17255",
+    "upstream_file": "Hy-MT2-1.8B-1.25Bit.gguf",
+    "upstream_sha256": "cc497fe8f033b52b3b8b00a7669e9661435432f9d4cd43f7ed24400c01507a93",
+    "prepared_sha256": "e482a38ceaaf8420573483c96ddc8449922b5f5de6a8023b70316e65d41e6de7",
+    "model": {
+      "path": "models/translation/hy-mt2.gguf",
+      "bytes": 461860800,
+      "sha256": "e482a38ceaaf8420573483c96ddc8449922b5f5de6a8023b70316e65d41e6de7"
+    },
+    "runtime_revision": "c828a2e883defef95fd6121ee1586efcce89ad40",
+    "runtime": [
+      {
+        "path": "runtime/translation/avx2/expansion-patch-sha256.txt",
+        "bytes": 66,
+        "sha256": "da3ac79b3c3999a63e869ef029799cd6ef893ea4b8766a9062fb4244e0bdff2e"
+      },
+      {
+        "path": "runtime/translation/avx2/LICENSE-llama.cpp.txt",
+        "bytes": 1099,
+        "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+      },
+      {
+        "path": "runtime/translation/avx2/llama-server.exe",
+        "bytes": 9171456,
+        "sha256": "3c5c695fd3d74ef10d71fa5d20faf66abe6fa82e47cf7ebd2878c6994cfba423"
+      },
+      {
+        "path": "runtime/translation/avx2/runtime-revision.txt",
+        "bytes": 42,
+        "sha256": "abd3cf207658eeae1c758bf4d269e1171743cd993a8887ca23688b9eb8642513"
+      },
+      {
+        "path": "runtime/translation/baseline/expansion-patch-sha256.txt",
+        "bytes": 66,
+        "sha256": "da3ac79b3c3999a63e869ef029799cd6ef893ea4b8766a9062fb4244e0bdff2e"
+      },
+      {
+        "path": "runtime/translation/baseline/LICENSE-llama.cpp.txt",
+        "bytes": 1099,
+        "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+      },
+      {
+        "path": "runtime/translation/baseline/llama-server.exe",
+        "bytes": 8999936,
+        "sha256": "4a40ff6dcb1ac957bea9108850084075d350ec3cf618c8953e25e6485b566dc8"
+      },
+      {
+        "path": "runtime/translation/baseline/runtime-revision.txt",
+        "bytes": 42,
+        "sha256": "abd3cf207658eeae1c758bf4d269e1171743cd993a8887ca23688b9eb8642513"
+      },
+      {
+        "path": "runtime/translation/vulkan/expansion-patch-sha256.txt",
+        "bytes": 66,
+        "sha256": "da3ac79b3c3999a63e869ef029799cd6ef893ea4b8766a9062fb4244e0bdff2e"
+      },
+      {
+        "path": "runtime/translation/vulkan/LICENSE-llama.cpp.txt",
+        "bytes": 1099,
+        "sha256": "bcd8ec749126d45cb06737d0690295d73df4b6e7e194205bcf91190368f27285"
+      },
+      {
+        "path": "runtime/translation/vulkan/llama-server.exe",
+        "bytes": 59700224,
+        "sha256": "64d5169d56fe5954a3085a3937b52337bb57b04eb2eab07a170f836cdfd3eed5"
+      },
+      {
+        "path": "runtime/translation/vulkan/runtime-revision.txt",
+        "bytes": 42,
+        "sha256": "abd3cf207658eeae1c758bf4d269e1171743cd993a8887ca23688b9eb8642513"
+      },
+      {
+        "path": "runtime/translation/vulkan/vulkan-1.dll",
+        "bytes": 1632696,
+        "sha256": "63756367fb7990189048ea4b80c16f633b9614bcdaf2d461477403a59c659bd1"
+      },
+      {
+        "path": "runtime/msvcp140.dll",
+        "bytes": 557728,
+        "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9"
+      },
+      {
+        "path": "runtime/msvcp140_1.dll",
+        "bytes": 35952,
+        "sha256": "bfad5aef4c63a669e3c140655cdfdf395b6c979b400a447bd5dcb65ed8826c3d"
+      },
+      {
+        "path": "runtime/vcruntime140.dll",
+        "bytes": 124544,
+        "sha256": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066"
+      },
+      {
+        "path": "runtime/vcruntime140_1.dll",
+        "bytes": 49792,
+        "sha256": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f"
+      }
+    ],
+    "runtime_archive": {
+      "url": "https://github.com/dmz1207/Mini-AI/releases/download/v1.0.0/MiniAI-native-windows-x64.zip",
+      "bytes": 27454168,
+      "sha256": "c07599254922c0080be299a94ec97a62e5938b1787cb867280e92f0a432da154"
+    }
+  },
   "ocr_name": "PP-OCRv6 medium",
   "ocr": [
     {
@@ -27,121 +134,6 @@
       ]
     }
   ],
-  "translation": {
-    "engine": "CTranslate2",
-    "quantization": "int8",
-    "archives": [
-      {
-        "pair": "eng-zho",
-        "url": "https://object.pouta.csc.fi/Tatoeba-MT-models/eng-zho/opus-2020-07-17.zip",
-        "sha256": "ab90e5583fa3ec46d8c5c50f106cbd65221978cd052c7e2059981439325ae24b",
-        "bytes": 288947487,
-        "files": {
-          "config.json": {
-            "sha256": "95dabd564e6abdb470e95f9106766647d8dc59e1bc2a1517d292c0cee5ca5812",
-            "bytes": 231
-          },
-          "model.bin": {
-            "sha256": "b4fedbc97c2006f6d8fc089e58a2eb7385cb66b16a5dbbf136e23e6490fcfb80",
-            "bytes": 82713357
-          },
-          "shared_vocabulary.json": {
-            "sha256": "4821251fdc0a6c9e889837b42427a90cb3240f71aef89681a5a6de525182a634",
-            "bytes": 1368888
-          },
-          "source.spm": {
-            "sha256": "5775ddc9e3ff2fae91554da56468ad35ff56edaba870fea74447bc7234bfdaa8",
-            "bytes": 806435
-          },
-          "target.spm": {
-            "sha256": "81dc94efa84e4025ef38d25d5d07429fe41e3eb29d44003f1db6fe98487b0052",
-            "bytes": 804600
-          }
-        }
-      },
-      {
-        "pair": "zho-eng",
-        "url": "https://object.pouta.csc.fi/Tatoeba-MT-models/zho-eng/opus-2020-07-17.zip",
-        "sha256": "9749101f963f552a270ff4de0c8b69c88f51c358d6b4cc87760aff2cffcf4067",
-        "bytes": 288654138,
-        "files": {
-          "config.json": {
-            "sha256": "95dabd564e6abdb470e95f9106766647d8dc59e1bc2a1517d292c0cee5ca5812",
-            "bytes": 231
-          },
-          "model.bin": {
-            "sha256": "c66ca93eaa07e094903e1ea8278282ba17a9e2f1eb7de454b7b7ce5ff112664b",
-            "bytes": 82713357
-          },
-          "shared_vocabulary.json": {
-            "sha256": "55d071d6c63a2dab993f00e77077eca76573ac6964990e2e80de7462344401fb",
-            "bytes": 1368999
-          },
-          "source.spm": {
-            "sha256": "e27a3a1b539f4959ec72ea60e453f49156289f95d4e6000b29332efc45616203",
-            "bytes": 804677
-          },
-          "target.spm": {
-            "sha256": "6a881f4717cd7265f53fea54fd3dc689c767c05338fac7a4590f3088cb2d7855",
-            "bytes": 806530
-          }
-        }
-      }
-    ]
-  },
-  "onnxruntime": {
-    "version": "1.20.1",
-    "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-win-x64-1.20.1.zip",
-    "files": [
-      {
-        "path": "runtime/onnxruntime.dll",
-        "bytes": 11569696,
-        "sha256": "4cb41e89b8bf30578e1dd95e9c40292d61974a4bfcd666409302c4f0c5aa8ce0"
-      },
-      {
-        "path": "runtime/onnxruntime_providers_shared.dll",
-        "bytes": 22048,
-        "sha256": "3b164f0019863266971843baca9551f015db7e502e2d9c4575f74c6a2bbbb78a"
-      }
-    ]
-  },
-  "translation_runtime": [
-    {
-      "name": "Python",
-      "version": "3.13.17",
-      "url": "https://www.python.org/ftp/python/3.13.17/python-3.13.17-embed-amd64.zip",
-      "sha256": "9e35319bffedab8b36ad44d8f377cb4f1733bcec257a0b6d04d94f01486ddb38",
-      "bytes": 11441267
-    },
-    {
-      "name": "ctranslate2",
-      "version": "4.8.4",
-      "url": "https://files.pythonhosted.org/packages/37/ae/4fbe636b36fd4fd4266e309d050548c1ae0a23c88ef73ef89c6485db99d1/ctranslate2-4.8.4-cp313-cp313-win_amd64.whl",
-      "sha256": "d9523961651ac0f51e4e62d03307609ff93d828b32ae92dc8b14a7e55243f6f2",
-      "bytes": 20371182
-    },
-    {
-      "name": "sentencepiece",
-      "version": "0.2.2",
-      "url": "https://files.pythonhosted.org/packages/09/fa/d2d6369257fd2f0de616b1c7110b73fab409ef61b14f1b9e0010ed325914/sentencepiece-0.2.2-cp313-cp313-win_amd64.whl",
-      "sha256": "74f0ee601047c0c12a783088b51be4e6214a62ecd9e02278c477433cd16e0ed9",
-      "bytes": 1247987
-    },
-    {
-      "name": "numpy",
-      "version": "2.5.4",
-      "url": "https://files.pythonhosted.org/packages/90/8c/140a40398a66b4471211be1affdb6ed24c486d581bd28d07b7f2fcb69540/numpy-2.5.4-cp313-cp313-win_amd64.whl",
-      "sha256": "8b4d2fd2d34e5f8c9235ee787de5631a37a28402b15cb80814df973d2be54129",
-      "bytes": 12566113
-    },
-    {
-      "name": "PyYAML",
-      "version": "6.0.3",
-      "url": "https://files.pythonhosted.org/packages/97/c9/39d5b874e8b28845e4ec2202b5da735d0199dbe5b8fb85f91398814a9a46/pyyaml-6.0.3-cp313-cp313-win_amd64.whl",
-      "sha256": "79005a0d97d5ddabfeeea4cf676af11e647e41d81c9a7722a193022accdb6b7c",
-      "bytes": 154090
-    }
-  ],
   "ocr_fast": [
     {
       "path": "models/ocr-fast/det.onnx",
@@ -167,5 +159,65 @@
         "https://www.modelscope.cn/models/RapidAI/RapidOCR/resolve/v3.10.0/paddle/PP-OCRv6/rec/PP-OCRv6_rec_tiny/ppocrv6_tiny_dict.txt"
       ]
     }
-  ]
+  ],
+  "onnxruntime": {
+    "version": "1.20.1",
+    "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-win-x64-1.20.1.zip",
+    "files": [
+      {
+        "path": "runtime/onnxruntime.dll",
+        "bytes": 11569696,
+        "sha256": "4cb41e89b8bf30578e1dd95e9c40292d61974a4bfcd666409302c4f0c5aa8ce0"
+      },
+      {
+        "path": "runtime/onnxruntime_providers_shared.dll",
+        "bytes": 22048,
+        "sha256": "3b164f0019863266971843baca9551f015db7e502e2d9c4575f74c6a2bbbb78a"
+      }
+    ]
+  },
+  "formula": {
+    "engine": "RapidLaTeX OCR ONNX",
+    "license": "MIT",
+    "upstream_repo": "inYourOwnBrowser/rapid-latex-ocr-onnx",
+    "upstream_revision": "0d0a23977b50433b07cdf95513ed7b7e45d3a761",
+    "files": [
+      {
+        "path": "models/formula/encoder.onnx",
+        "file": "encoder.onnx",
+        "bytes": 89008136,
+        "sha256": "01bf5dc25539ca0cd5b1bd29296ea495977a6ba5f629dc4178277809d26e5e7d",
+        "urls": [
+          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/encoder.onnx"
+        ]
+      },
+      {
+        "path": "models/formula/decoder.onnx",
+        "file": "decoder.onnx",
+        "bytes": 50952726,
+        "sha256": "bd695497bf1b22279b7626f5916c79226e1e244c84355f8da7edfd2d921d0072",
+        "urls": [
+          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/decoder.onnx"
+        ]
+      },
+      {
+        "path": "models/formula/image_resizer.onnx",
+        "file": "image_resizer.onnx",
+        "bytes": 38967751,
+        "sha256": "e0b075c39700f64d50400f39c8fc186bbb3b5d84d31864008313f376603aca9d",
+        "urls": [
+          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/image_resizer.onnx"
+        ]
+      },
+      {
+        "path": "models/formula/tokenizer.json",
+        "file": "tokenizer.json",
+        "bytes": 24174,
+        "sha256": "1dc27b18d6a518d0d5ff3f4bb7bd98521fe80ad39e5b2a246d4109f1bb9d5019",
+        "urls": [
+          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/tokenizer.json"
+        ]
+      }
+    ]
+  }
 }

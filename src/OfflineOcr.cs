@@ -12,6 +12,9 @@ namespace MiniAI {
         internal string Text;
         internal float Confidence;
         internal PointF[] Corners;
+        internal string Kind="text";
+        internal string Tex="";
+        internal float FormulaConfidence;
     }
     internal sealed class OfflineOcr : IDisposable {
         readonly OfflineRuntime runtime;

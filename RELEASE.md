@@ -1,11 +1,13 @@
-Mini-AI 0.2.0: fast offline OCR and Chinese-English translation.
+# Mini-AI 1.0.0
 
-CTranslate2 4.8.4 with two OPUS-MT INT8 models replaces the GGUF/LLM backend. Fast (beam 1) and High quality (beam 4), physical-core CPU threading, automatic AVX2/AVX-512 dispatch, startup prewarming, streaming and bounded translation caches reduce latency.
+First formal release: a self-contained offline OCR, formula and translation tool, with Mini PDF integration.
 
-New selections cancel old work. Pending bubbles stay open; completed results remain readable. Hover, copy a selection, expand Source to translate a smaller part, press Ctrl to pin or Esc to close. Photo import, screenshots and clipboard OCR remain available. Fast image OCR adds PP-OCRv6 tiny; quality/PDF OCR retains medium. Image translation overlays the text regions and supports original switching, selectable OCR text, copying and PNG save.
+- Compact editable workspace, photo/drop/clipboard OCR, screenshot extraction and translated-image preview.
+- Shared resizable translation bubble with readable streaming text, exact substring translation, pin/close controls and stale-request cancellation.
+- Hy-MT2 1.8B 1.25-bit model; all 38 supported target options; fast and quality decoding with independent caches.
+- CPU-first inference using physical cores, AVX2 detection and a baseline fallback; background low-priority initialization and prompt/model reuse. Optional Vulkan backend is reproducibly built without a local SDK requirement.
+- Cropped formula recognition, editable LaTeX, offline visual preview and MathML clipboard export for compatible MathType versions. Multiple formulas keep separate corrections.
+- Windows-native lossless compression; every decoded payload is checked; owned runtime files are cleaned after the final client exits, while OCR/translation results are preserved.
+- Fresh-source asset installer and native dependency audit; service, stream/cancel, multilingual, formula, desktop, image and isolated portable checks. Actual IEEE paper selections were tested through Mini PDF without uploading private papers.
 
-NVIDIA CUDA acceleration is attempted automatically when a compatible driver and CUDA 12/cuBLAS runtime are present. Failure falls back to CPU. These optional CUDA libraries are not bundled; AMD/Intel GPU acceleration is not provided by this backend. Real discrete-GPU speed was not tested locally.
-
-Targets: Simplified Chinese, English and Traditional Chinese. The smaller model can need corrections for technical terminology; earlier multilingual LLM releases remain separately available.
-
-Download MiniAI-Portable.exe and double-click. No separate Python installation. First run verifies/extracts beside the EXE; the last client exit cleans verified runtime/model files. Normal OCR/translation results remain in MiniAI Results; instant translations leave no saved results. Next launch extracts again. Mini PDF 0.12.3 adds matching streaming and selected-text integration. See README.md, Models.md and Verification.md for measurements and limits.
+Accuracy depends on language, source layout and image quality. Recognition/translation is not infallible. The installed MathType application and discrete GPUs were not available for local validation. See Verification.md for concrete coverage.

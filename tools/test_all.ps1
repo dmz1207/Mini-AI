@@ -11,7 +11,7 @@ try {
         try {
             $candidate=Get-Content -LiteralPath (Join-Path $Root 'state\connection.json') -Raw -Encoding UTF8 | ConvertFrom-Json
             $health=Invoke-RestMethod ($candidate.url+'/health') -Headers @{Authorization=('Bearer '+$candidate.token)} -TimeoutSec 2
-            if($health.ok){$connection=$candidate;break}
+            if($health.ok -and $candidate.pid -eq $process.Id){$connection=$candidate;break}
         } catch {}
         Start-Sleep -Milliseconds 100
     }
@@ -20,6 +20,11 @@ try {
     if($LASTEXITCODE -ne 0){throw 'Service integration checks failed.'}
     & $Python (Join-Path $PSScriptRoot 'test_streaming.py') --root $Root --output $output
     if($LASTEXITCODE -ne 0){throw 'Streaming checks failed.'}
+    & $Python (Join-Path $PSScriptRoot 'test_languages.py') --root $Root --output $output
+    if($LASTEXITCODE -ne 0){throw 'Multilingual translation checks failed.'}
+    & (Join-Path $PSScriptRoot 'test_formulas.ps1') -Root $Root -OutputDirectory (Join-Path $output 'formulas')
+    & $Python (Join-Path $PSScriptRoot 'test_formula_service.py') --root $Root --image (Join-Path $output 'formulas\formula-preview.png') --output $output
+    if($LASTEXITCODE -ne 0){throw 'Dedicated formula OCR checks failed.'}
     if($Desktop){& (Join-Path $PSScriptRoot 'test_desktop.ps1') -Root $Root -OutputDirectory (Join-Path $output 'desktop'); & (Join-Path $PSScriptRoot 'test_bubbles.ps1') -Root $Root -OutputDirectory (Join-Path $output 'bubbles'); & (Join-Path $PSScriptRoot 'test_images.ps1') -Root $Root -OutputDirectory (Join-Path $output 'images')}
 } finally {
     if($connection -and $connection.pid -eq $process.Id) {

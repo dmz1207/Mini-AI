@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -40,38 +41,50 @@ namespace MiniAI {
         T Fn<T>(int index) where T:class {return Marshal.GetDelegateForFunctionPointer(Marshal.ReadIntPtr(api,index*IntPtr.Size),typeof(T)) as T;}
         void Check(IntPtr status){if(status==IntPtr.Zero)return;string error=Utf8(Fn<PointerFn>(2)(status));Fn<ReleaseFn>(93)(status);throw new IOException(error);}
         static string Utf8(IntPtr pointer){int length=0;while(length<65536&&Marshal.ReadByte(pointer,length)!=0)length++;var bytes=new byte[length];Marshal.Copy(pointer,bytes,0,length);return Encoding.UTF8.GetString(bytes);}
-        internal Session Open(string path){return new Session(this,path);}
+        internal Session Open(string path){return new Session(this,path,1,1);}
+        internal Session Open(string path,int inputCount,int outputCount){return new Session(this,path,inputCount,outputCount);}
         public void Dispose(){if(api!=IntPtr.Zero){if(memory!=IntPtr.Zero){Fn<ReleaseFn>(94)(memory);memory=IntPtr.Zero;}if(env!=IntPtr.Zero){Fn<ReleaseFn>(92)(env);env=IntPtr.Zero;}}if(module!=IntPtr.Zero){FreeLibrary(module);module=IntPtr.Zero;}}
         internal sealed class Tensor {internal float[] Data;internal long[] Shape;}
+        internal sealed class InputData {
+            internal Array Values;internal long[] Shape;internal int Type;
+            internal static InputData Float(float[] values,long[] shape){return new InputData{Values=values,Shape=shape,Type=1};}
+            internal static InputData Int64(long[] values,long[] shape){return new InputData{Values=values,Shape=shape,Type=7};}
+            internal static InputData Bool(byte[] values,long[] shape){return new InputData{Values=values,Shape=shape,Type=9};}
+        }
         internal sealed class Session : IDisposable {
-            readonly OfflineRuntime runtime;
-            IntPtr handle,inputName,outputName;
-            internal Session(OfflineRuntime owner,string path) {
+            readonly OfflineRuntime runtime;readonly IntPtr[] inputNames,outputNames;
+            IntPtr handle;
+            internal Session(OfflineRuntime owner,string path,int inputCount,int outputCount) {
                 runtime=owner;IntPtr options=IntPtr.Zero;
                 try {
                     owner.Check(owner.Fn<OutFn>(10)(out options));owner.Check(owner.Fn<SettingFn>(23)(options,2));owner.Check(owner.Fn<SettingFn>(24)(options,Hardware.PhysicalCores));
                     owner.Check(owner.Fn<SessionFn>(7)(owner.env,Path.GetFullPath(path),options,out handle));
-                    owner.Check(owner.Fn<NameFn>(36)(handle,UIntPtr.Zero,owner.allocator,out inputName));owner.Check(owner.Fn<NameFn>(37)(handle,UIntPtr.Zero,owner.allocator,out outputName));
+                    inputNames=new IntPtr[inputCount];outputNames=new IntPtr[outputCount];
+                    for(int i=0;i<inputNames.Length;i++)owner.Check(owner.Fn<NameFn>(36)(handle,new UIntPtr((uint)i),owner.allocator,out inputNames[i]));
+                    for(int i=0;i<outputNames.Length;i++)owner.Check(owner.Fn<NameFn>(37)(handle,new UIntPtr((uint)i),owner.allocator,out outputNames[i]));
                 }catch{Dispose();throw;}finally{if(options!=IntPtr.Zero)owner.Fn<ReleaseFn>(100)(options);}
             }
             internal Tensor Run(float[] values,long[] shape) {
-                IntPtr input=IntPtr.Zero,output=IntPtr.Zero,info=IntPtr.Zero;
-                var data=GCHandle.Alloc(values,GCHandleType.Pinned);GCHandle names=default(GCHandle),inputs=default(GCHandle),outputs=default(GCHandle),results=default(GCHandle);
+                return Run(new[]{InputData.Float(values,shape)});
+            }
+            internal Tensor Run(InputData[] values) {
+                if(values==null||values.Length!=inputNames.Length)throw new ArgumentException("The ONNX input count does not match the model.");
+                IntPtr output=IntPtr.Zero,info=IntPtr.Zero;var inputsCreated=new IntPtr[values.Length];var pins=new List<GCHandle>();GCHandle names=default(GCHandle),inputs=default(GCHandle),outputs=default(GCHandle),results=default(GCHandle);
                 var outputValues=new IntPtr[1];
                 try {
-                    runtime.Check(runtime.Fn<TensorFn>(49)(runtime.memory,data.AddrOfPinnedObject(),new UIntPtr((ulong)values.LongLength*4),shape,new UIntPtr((uint)shape.Length),1,out input));
-                    names=GCHandle.Alloc(new[]{inputName},GCHandleType.Pinned);inputs=GCHandle.Alloc(new[]{input},GCHandleType.Pinned);outputs=GCHandle.Alloc(new[]{outputName},GCHandleType.Pinned);results=GCHandle.Alloc(outputValues,GCHandleType.Pinned);
-                    runtime.Check(runtime.Fn<RunFn>(9)(handle,IntPtr.Zero,names.AddrOfPinnedObject(),inputs.AddrOfPinnedObject(),new UIntPtr(1),outputs.AddrOfPinnedObject(),new UIntPtr(1),results.AddrOfPinnedObject()));output=outputValues[0];
+                    for(int i=0;i<values.Length;i++){InputData value=values[i];GCHandle pin=GCHandle.Alloc(value.Values,GCHandleType.Pinned);pins.Add(pin);UIntPtr bytes=new UIntPtr((ulong)(value.Values.Length*System.Runtime.InteropServices.Marshal.SizeOf(value.Values.GetType().GetElementType())));runtime.Check(runtime.Fn<TensorFn>(49)(runtime.memory,pin.AddrOfPinnedObject(),bytes,value.Shape,new UIntPtr((uint)value.Shape.Length),value.Type,out inputsCreated[i]));}
+                    names=GCHandle.Alloc(inputNames,GCHandleType.Pinned);inputs=GCHandle.Alloc(inputsCreated,GCHandleType.Pinned);outputs=GCHandle.Alloc(outputNames,GCHandleType.Pinned);results=GCHandle.Alloc(outputValues,GCHandleType.Pinned);
+                    runtime.Check(runtime.Fn<RunFn>(9)(handle,IntPtr.Zero,names.AddrOfPinnedObject(),inputs.AddrOfPinnedObject(),new UIntPtr((uint)inputsCreated.Length),outputs.AddrOfPinnedObject(),new UIntPtr(1),results.AddrOfPinnedObject()));output=outputValues[0];
                     runtime.Check(runtime.Fn<InfoFn>(65)(output,out info));UIntPtr rank,count;runtime.Check(runtime.Fn<CountFn>(61)(info,out rank));runtime.Check(runtime.Fn<CountFn>(64)(info,out count));
                     if(rank.ToUInt64()>8||count.ToUInt64()>64000000)throw new IOException("Offline model output exceeds the limit.");
                     var dimensions=new long[(int)rank.ToUInt64()];runtime.Check(runtime.Fn<ShapeFn>(62)(info,dimensions,rank));IntPtr pointer;runtime.Check(runtime.Fn<InfoFn>(51)(output,out pointer));
                     var result=new float[(int)count.ToUInt64()];Marshal.Copy(pointer,result,0,result.Length);return new Tensor{Data=result,Shape=dimensions};
                 }finally {
-                    if(info!=IntPtr.Zero)runtime.Fn<ReleaseFn>(99)(info);if(outputValues[0]!=IntPtr.Zero)runtime.Fn<ReleaseFn>(96)(outputValues[0]);if(input!=IntPtr.Zero)runtime.Fn<ReleaseFn>(96)(input);
-                    if(results.IsAllocated)results.Free();if(outputs.IsAllocated)outputs.Free();if(inputs.IsAllocated)inputs.Free();if(names.IsAllocated)names.Free();data.Free();
+                    if(info!=IntPtr.Zero)runtime.Fn<ReleaseFn>(99)(info);if(outputValues[0]!=IntPtr.Zero)runtime.Fn<ReleaseFn>(96)(outputValues[0]);for(int i=0;i<inputsCreated.Length;i++)if(inputsCreated[i]!=IntPtr.Zero)runtime.Fn<ReleaseFn>(96)(inputsCreated[i]);foreach(GCHandle pin in pins)if(pin.IsAllocated)pin.Free();
+                    if(results.IsAllocated)results.Free();if(outputs.IsAllocated)outputs.Free();if(inputs.IsAllocated)inputs.Free();if(names.IsAllocated)names.Free();
                 }
             }
-            public void Dispose(){if(inputName!=IntPtr.Zero){runtime.Check(runtime.Fn<FreeFn>(76)(runtime.allocator,inputName));inputName=IntPtr.Zero;}if(outputName!=IntPtr.Zero){runtime.Check(runtime.Fn<FreeFn>(76)(runtime.allocator,outputName));outputName=IntPtr.Zero;}if(handle!=IntPtr.Zero){runtime.Fn<ReleaseFn>(95)(handle);handle=IntPtr.Zero;}}
+            public void Dispose(){if(inputNames!=null)foreach(IntPtr name in inputNames)if(name!=IntPtr.Zero)runtime.Check(runtime.Fn<FreeFn>(76)(runtime.allocator,name));if(outputNames!=null)foreach(IntPtr name in outputNames)if(name!=IntPtr.Zero)runtime.Check(runtime.Fn<FreeFn>(76)(runtime.allocator,name));if(handle!=IntPtr.Zero){runtime.Fn<ReleaseFn>(95)(handle);handle=IntPtr.Zero;}}
         }
     }
 }

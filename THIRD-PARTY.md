@@ -1,20 +1,18 @@
-# Third-party components
+# Third-party notices
 
-The application code is MIT licensed. This does not relicense models or native runtimes.
+Mini-AI source is MIT licensed. Included components retain their own licenses:
 
-| Component | Source / license |
-|---|---|
-| OPUS-MT eng-zho and zho-eng (2020-07-17) | University of Helsinki; both original archives include CC BY 4.0; attribution and INT8 conversion recorded in `licenses/OPUS-MT-ATTRIBUTION.txt` |
-| CTranslate2 4.8.4 | OpenNMT / SYSTRAN, MIT; official Windows wheel, including its numerical backends |
-| Intel oneMKL / Intel OpenMP / oneDNN | Numerical backends bundled by the official CTranslate2 wheel; Intel and Apache/LLVM notices retained in licenses/ |
-| SentencePiece 0.2.2 | Google, Apache 2.0 and included third-party notices |
-| CPython 3.13.17 | Python Software Foundation; complete notice in `runtime/translation-ct2/LICENSE.txt` |
-| NumPy 2.5.4 / OpenBLAS | NumPy BSD and bundled numerical-library notices, retained in its runtime package |
-| PyYAML 6.0.3 | MIT; runtime package notices retained |
-| PP-OCRv6 medium + tiny / RapidOCR model distribution | PaddleOCR / RapidAI, Apache 2.0 |
-| ONNX Runtime 1.20.1 | MIT and `ONNXRuntime-ThirdPartyNotices.txt` |
-| Microsoft Visual C++ runtime | App-local redistributable components required by the native libraries |
+| Component | Purpose | Notice |
+| --- | --- | --- |
+| Tencent Hy-MT2 / AngelSlim 1.25-bit model | Offline multilingual translation | `licenses/Hy-MT2-Apache-2.0.txt`, pinned provenance in `assets.json` |
+| Pinned STQ llama.cpp fork | Native inference, CPU and optional Vulkan | `runtime/translation/*/LICENSE-llama.cpp.txt`; MIT; source revision and reproducible loader patch included |
+| PP-OCRv6 / PaddleOCR | Printed text recognition | `licenses/PaddleOCR-Apache-2.0.txt` |
+| RapidOCR / dictionaries | OCR assets and conversion | `licenses/RapidOCR-Apache-2.0.txt` |
+| RapidLaTeXOCR | Formula recognition | `licenses/FormulaOCR-MIT.txt` |
+| ONNX Runtime | OCR execution | `licenses/ONNXRuntime-LICENSE`, `licenses/ONNXRuntime-ThirdPartyNotices.txt` |
+| WpfMath 0.12.0 | Embedded WPF formula preview | `licenses/WpfMath-MIT.txt`, `assets/lib/WpfMath.json` |
+| CMUdict word list | Conservative PDF word dehyphenation | `licenses/CMUdict-LICENSE.txt` |
+| Optional Vulkan loader | GPU driver interface | `licenses/VulkanLoader-Apache-2.0.txt`, `licenses/VulkanRT-License.txt` when bundled |
+| Microsoft VC++ redistributable DLLs | App-local ONNX dependencies | Microsoft Visual Studio runtime redistribution terms; original binaries are unmodified |
 
-Model/runtime URLs, versions, original file sizes, SHA-256 digests and converted-output digests are pinned in `assets.json`. License texts are retained in `licenses/` and the runtime distribution. The source archive omits model weights and generated runtime binaries. Original OPUS build archives, tests, headers and unused cuDNN binaries are not shipped.
-
-Optional CUDA libraries installed by the user remain governed by NVIDIA's terms. The default package runs on CPU without them. Older Hy-MT2/llama.cpp licenses belong to earlier releases and are not used by this backend.
+Windows .NET Framework, WPF, WinForms, graphics/image codecs and Cabinet compression are operating-system facilities, not embedded redistributable runtimes. OPUS-MT, CTranslate2, SentencePiece, MKL, Python and an embedded browser are not shipped in this release.

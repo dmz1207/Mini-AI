@@ -41,16 +41,18 @@ namespace MiniAI.Portable {
             using(var source=new FileStream(Assembly.GetExecutingAssembly().Location,FileMode.Open,FileAccess.Read,FileShare.Read))
             using(var archive=new ZipArchive(source,ZipArchiveMode.Read)) {
                 var names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);foreach(var entry in archive.Entries)if(!names.Add(entry.FullName))throw new IOException("Duplicate package entry.");
+                var codecs=new Dictionary<string,string>();var codecEntry=archive.GetEntry("MiniAI/portable-codecs.json");if(codecEntry!=null){if(codecEntry.Length>1024*1024)throw new IOException("Invalid payload codec manifest.");using(var reader=new StreamReader(codecEntry.Open())){var info=json.Deserialize<Dictionary<string,object>>(reader.ReadToEnd());if(Convert.ToInt32(info["format"])!=1)throw new IOException("Unsupported payload codec.");var map=(Dictionary<string,object>)info["files"];foreach(var pair in map){if(!files.ContainsKey(pair.Key)||(Convert.ToString(pair.Value)!="lzms"&&Convert.ToString(pair.Value)!="lzms-shuffle4"))throw new IOException("Invalid payload codec.");codecs.Add(pair.Key,Convert.ToString(pair.Value));}}}
                 foreach(var file in files) {
                     string path=Target(root,file.Key),expected=Convert.ToString(file.Value["sha256"]);long size=Convert.ToInt64(file.Value["bytes"]);
-                    var entry=archive.GetEntry("MiniAI/"+file.Key);if(entry==null||entry.Length!=size)throw new IOException("Incomplete offline package: "+file.Key);
+                    string codec;bool compact=codecs.TryGetValue(file.Key,out codec);var entry=archive.GetEntry("MiniAI/"+file.Key);if(entry==null||!compact&&entry.Length!=size||compact&&entry.Length>size+1024*1024)throw new IOException("Incomplete offline package: "+file.Key);
                     progress((int)(done*100/Math.Max(1,total)),"Checking / 正在检查 "+Path.GetFileName(path));
                     if(File.Exists(path)&&new FileInfo(path).Length==size&&Digest(path)==expected){done+=size;continue;}
                     Directory.CreateDirectory(Path.GetDirectoryName(path));string pending=path+".miniai-"+Guid.NewGuid().ToString("N")+".part";
                     try {
                         using(var input=entry.Open())using(var output=new FileStream(pending,FileMode.CreateNew,FileAccess.Write,FileShare.None))using(var hash=SHA256.Create()) {
                             var buffer=new byte[256*1024];int read;long written=0,last=0;var watch=Stopwatch.StartNew();
-                            while((read=input.Read(buffer,0,buffer.Length))>0){written+=read;if(written>size)throw new IOException("Invalid package entry size.");output.Write(buffer,0,read);hash.TransformBlock(buffer,0,read,buffer,0);if(watch.ElapsedMilliseconds-last>80){last=watch.ElapsedMilliseconds;progress((int)((done+written)*100/Math.Max(1,total)),"Preparing / 正在准备 "+Path.GetFileName(path));}}
+                            Action<byte[],int> write=delegate(byte[] data,int count){written+=count;if(written>size)throw new IOException("Invalid package entry size.");output.Write(data,0,count);hash.TransformBlock(data,0,count,data,0);if(watch.ElapsedMilliseconds-last>80){last=watch.ElapsedMilliseconds;progress((int)((done+written)*100/Math.Max(1,total)),"Preparing / 正在准备 "+Path.GetFileName(path));}};
+                            if(compact)PayloadCodec.Decode(input,size,codec=="lzms-shuffle4",write);else while((read=input.Read(buffer,0,buffer.Length))>0)write(buffer,read);
                             hash.TransformFinalBlock(new byte[0],0,0);if(written!=size||Hex(hash.Hash)!=expected)throw new IOException("Package checksum mismatch: "+file.Key+" / 请重新下载完整文件。");
                         }
                         if(File.Exists(path))File.Replace(pending,path,null);else File.Move(pending,path);

@@ -4,7 +4,6 @@ Downloads and temporary files stay below the selected MiniAI folder.
 """
 import argparse,concurrent.futures,hashlib,json,os,time,urllib.request,zipfile
 from pathlib import Path
-from install_ct2 import install as install_translation
 
 def digest(path):
     h=hashlib.sha256()
@@ -42,7 +41,7 @@ def fetch(urls,path,sha,size):
                         parallel_download(url,pending,size,opener,15 if direct else 45)
                         if pending.stat().st_size!=size or digest(pending)!=sha:raise ValueError('Size or SHA-256 mismatch')
                         os.replace(pending,path);print('Verified:',path.name,size,flush=True);return
-                    except NoRanges:pass
+                    except (NoRanges,OSError,ValueError):pass
                 request=urllib.request.Request(url,headers={'User-Agent':'MiniAI-asset-installer/0.1'})
                 with opener.open(request,timeout=8 if direct else 45) as response,pending.open('wb') as output:
                     try:response.fp.raw._sock.settimeout(120)
@@ -62,10 +61,34 @@ def fetch(urls,path,sha,size):
 def install(root):
     root=Path(root).resolve();manifest=json.loads((Path(__file__).resolve().parents[1]/'assets.json').read_text(encoding='utf-8'))
     work=root/'work/downloads';work.mkdir(parents=True,exist_ok=True)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
-        tasks=[pool.submit(fetch,item['urls'],root/item['path'],item['sha256'],item['bytes']) for item in manifest['ocr']+manifest.get('ocr_fast',[])]
+    formula=manifest.get('formula',{}).get('files',[])
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
+        tasks=[pool.submit(fetch,item['urls'],root/item['path'],item['sha256'],item['bytes']) for item in manifest['ocr']+manifest.get('ocr_fast',[])+formula]
         for task in tasks:task.result()
-    install_translation(root,manifest,fetch,digest)
+    # The historical GGUF type identifiers are adapted without requantizing
+    # any tensor. Only the exact pinned upstream model is accepted.
+    translation=manifest['translation'];model=translation['model'];target=root/model['path']
+    if not target.exists() or digest(target)!=model['sha256']:
+        url='https://huggingface.co/'+translation['upstream_repo']+'/resolve/'+translation['upstream_revision']+'/'+translation['upstream_file']
+        fetch([url],target,translation['upstream_sha256'],model['bytes'])
+        from prepare_model import prepare
+        prepare(target)
+        if digest(target)!=model['sha256']:raise ValueError('Prepared Hy-MT2 checksum mismatch')
+    required=translation['runtime']
+    missing=[item for item in required if not (root/item['path']).exists() or digest(root/item['path'])!=item['sha256']]
+    if missing:
+        native=translation['runtime_archive'];archive=work/'native-windows-x64.zip'
+        fetch([native['url']],archive,native['sha256'],native['bytes'])
+        with zipfile.ZipFile(archive) as bundle:
+            if bundle.testzip() is not None:raise ValueError('Native runtime ZIP is damaged')
+            for item in missing:
+                destination=(root/item['path']).resolve()
+                if not destination.is_relative_to(root):raise ValueError('Invalid native destination')
+                entry=bundle.getinfo(item['path'])
+                if entry.file_size!=item['bytes']:raise ValueError('Unexpected native file size')
+                data=bundle.read(entry)
+                if hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('Native checksum mismatch')
+                destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(data)
     ort=manifest['onnxruntime'];missing=[item for item in ort['files'] if not (root/item['path']).exists() or digest(root/item['path'])!=item['sha256']]
     if missing:
         archive=work/'onnxruntime-win-x64-1.20.1.zip'
@@ -91,7 +114,7 @@ def install(root):
                 break
             except Exception:
                 if not direct:raise
-    print('Offline models, CTranslate2 and ONNX Runtime verified. Add app-local VC++ DLLs from the release build.',flush=True)
+    print('Hy-MT2/STQ, text OCR, formula OCR and ONNX Runtime verified. Add app-local VC++ DLLs from the release build.',flush=True)
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);install(parser.parse_args().root)

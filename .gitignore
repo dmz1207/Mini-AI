@@ -15,7 +15,4 @@ last-error.txt
 allowed-origins.txt
 __pycache__/
 package-checksums.json
-runtime/translation-ct2/
-models/translation/eng-zho/
-models/translation/zho-eng/
 *.part

@@ -1,0 +1,8 @@
+{
+  "package": "WpfMath",
+  "version": "0.12.0",
+  "package_sha256": "f6530a4f64754fc69d68477c5d3dee4e41332d2e54d4994effc2877c24289771",
+  "dll_sha256": "219bd24d11d05e763e6bac18f6a482912b5b3878742ad730246166bc69323a10",
+  "license": "MIT",
+  "source_revision": "96e6c1249a6e11376ccf134b81209b80a2870e52"
+}

@@ -1,48 +1,38 @@
 {
-  "version": "0.2.0",
-  "reader_version": "0.12.3",
-  "date": "2026-11-01",
-  "platform": "Windows x64",
-  "cpu": "Intel Core i7-8565U, 4 physical cores / 8 logical threads, AVX2",
-  "assertions": {
-    "service": 45,
-    "streaming_modes": 38,
-    "standalone_desktop": 11,
-    "bubble_lifecycle": 8,
-    "image_ocr_translation": 12,
-    "reader_ocr_word": 33
+  "version": "1.0.0",
+  "date": "2026-11-02",
+  "platform": "Windows 10/11 x64, .NET Framework 4.8",
+  "hardware": "Intel Core i7-8565U, 4 physical / 8 logical cores, Intel UHD 620",
+  "default_backend": "CPU STQ AVX2, 4 inference and batch threads",
+  "translation": "Hy-MT2-1.8B 1.25-bit, all 38 target options",
+  "checks": {
+    "service": 49,
+    "streaming_and_cancel": 38,
+    "language_targets": 38,
+    "formula_mathml_ui": 27,
+    "formula_endpoint_structure": 6,
+    "desktop": 11,
+    "bubble_lifecycle": 11,
+    "image_ocr_translation": 12
   },
-  "focused_assertions": 147,
-  "translation": "CTranslate2 4.8.4 + OPUS-MT eng-zho/zho-eng INT8",
-  "modes": {
-    "fast": {
-      "beam": 1,
-      "streaming": "tokens"
-    },
-    "quality": {
-      "beam": 4,
-      "streaming": "completed segments"
-    }
+  "focused_checks": 192,
+  "reader": {
+    "version": "0.12.4",
+    "core_assertions": 847,
+    "independent_pdf_checks": 33,
+    "actual_ieee_paper_selection_assertions": 22
   },
-  "ocr": {
-    "fast": "PP-OCRv6 tiny",
-    "quality": "PP-OCRv6 medium",
-    "pdf_default": "quality"
+  "native": {
+    "source_revision": "c828a2e883defef95fd6121ee1586efcce89ad40",
+    "hosted_build_run": 41321718293,
+    "arithmetic_checks": "passed for CPU baseline, AVX2 and Vulkan builds",
+    "gpu_speed_testing": "Stopped at user request; CPU is the default. One UHD 620 Vulkan inference run completed, slower than CPU. No discrete GPU validation."
   },
-  "service_bytes": 160768,
-  "service_sha256": "6e9268d1357a2fdf23ef8f3675029d80132f2a9e909eee35df59271c0627121a",
-  "private_documents_published": false,
-  "real_discrete_gpu_tested": false,
-  "portable_validation": "20 checks passed in an isolated Unicode folder, plus 10 actual reader package-loading checks",
   "limits": [
-    "No exhaustive OCR/translation accuracy claim",
-    "Two translation modes share the same model; beam 4 is not guaranteed to improve every sentence",
-    "NVIDIA CUDA acceleration requires separately installed compatible CUDA libraries; AMD/Intel GPU not supported",
-    "Tiny is faster but medium remains available for difficult images",
-    "Extraction, model warmup and dense-page OCR add latency; no universal two-second guarantee"
+    "OCR and translation checks are fixtures and smoke cases, not an accuracy benchmark.",
+    "Formula endpoint fixture verifies exponent structure. Some base symbols/operators in the clean example were substituted; verify and correct recognized TeX.",
+    "MathML clipboard formats and schema were tested; the MathType application was not installed.",
+    "Rare language samples were checked for completion and expected scripts, not native-speaker quality."
   ],
-  "portable_exe_assertions": 20,
-  "reader_portable_assertions": 10,
-  "total_focused_assertions": 177,
-  "portable_exe_bytes": 307272058
+  "portable_verification": "Separate portable-checks.json is generated from the final distributed EXE, including payload hashes, isolated startup, repair, shared clients and cleanup."
 }

@@ -1,9 +1,0 @@
-OPUS-MT English-Chinese and Chinese-English models
-University of Helsinki Language Technology Research Group
-Jorg Tiedemann and Santhosh Thottingal, EAMT 2020.
-Original models: eng-zho and zho-eng, opus-2020-07-17.
-https://github.com/Helsinki-NLP/Opus-MT
-https://object.pouta.csc.fi/Tatoeba-MT-models/eng-zho/opus-2020-07-17.zip
-https://object.pouta.csc.fi/Tatoeba-MT-models/zho-eng/opus-2020-07-17.zip
-Modifications: converted with CTranslate2 4.8.4 and quantized to INT8.
-Both original model archives include the CC BY 4.0 license.

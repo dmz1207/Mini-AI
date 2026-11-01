@@ -9,7 +9,7 @@ namespace MiniAI.Desktop {
     internal sealed class CaptureOverlay : Form {
         readonly Bitmap screen;
         Point start,current;
-        bool selecting;
+        bool selecting,hasPointer;
         internal Bitmap Result;
         internal Rectangle SelectedScreen;
         CaptureOverlay(Bitmap image,Rectangle bounds) {
@@ -33,13 +33,20 @@ namespace MiniAI.Desktop {
         }
         protected override void OnPaint(PaintEventArgs e) {
             e.Graphics.DrawImageUnscaled(screen,Point.Empty);using(var shade=new SolidBrush(Color.FromArgb(130,0,0,0)))e.Graphics.FillRectangle(shade,ClientRectangle);
-            var box=Selection(start,current,screen.Size);if(selecting&&!box.IsEmpty){e.Graphics.DrawImage(screen,box,box,GraphicsUnit.Pixel);using(var pen=new Pen(Color.FromArgb(58,158,245),2))e.Graphics.DrawRectangle(pen,box);}
+            var box=Selection(start,current,screen.Size);if(selecting&&!box.IsEmpty){e.Graphics.DrawImage(screen,box,box,GraphicsUnit.Pixel);using(var outline=new Pen(Color.FromArgb(15,15,15),4))e.Graphics.DrawRectangle(outline,box);using(var pen=new Pen(Color.FromArgb(255,226,0),2))e.Graphics.DrawRectangle(pen,box);}
             string text="Drag to select · Esc to cancel / 拖动框选 · Esc 取消";
             var point=selecting?new Point(Math.Max(8,box.Left),Math.Max(8,box.Top-32)):new Point(30,30);
             using(var font=new Font("Segoe UI",11))TextRenderer.DrawText(e.Graphics,text,font,point,Color.White,Color.FromArgb(50,50,50));
+            if(hasPointer) {
+                Point p=current;using(var dark=new Pen(Color.FromArgb(25,25,25),4))using(var bright=new Pen(Color.FromArgb(255,226,0),2)) {
+                    e.Graphics.DrawLine(dark,p.X-18,p.Y,p.X+18,p.Y);e.Graphics.DrawLine(dark,p.X,p.Y-18,p.X,p.Y+18);
+                    e.Graphics.DrawLine(bright,p.X-18,p.Y,p.X+18,p.Y);e.Graphics.DrawLine(bright,p.X,p.Y-18,p.X,p.Y+18);
+                }
+                using(var brush=new SolidBrush(Color.FromArgb(255,226,0)))e.Graphics.FillEllipse(brush,p.X-2,p.Y-2,4,4);
+            }
         }
         protected override void OnMouseDown(MouseEventArgs e){base.OnMouseDown(e);if(e.Button==MouseButtons.Right){DialogResult=DialogResult.Cancel;return;}if(e.Button!=MouseButtons.Left)return;start=current=e.Location;selecting=true;Capture=true;Invalidate();}
-        protected override void OnMouseMove(MouseEventArgs e){base.OnMouseMove(e);if(selecting){current=e.Location;Invalidate();}}
+        protected override void OnMouseMove(MouseEventArgs e){base.OnMouseMove(e);current=e.Location;hasPointer=true;Invalidate();}
         protected override void OnMouseUp(MouseEventArgs e){base.OnMouseUp(e);if(!selecting||e.Button!=MouseButtons.Left)return;current=e.Location;Capture=false;var box=Selection(start,current,screen.Size);Result=Crop(screen,box);if(Result==null){selecting=false;Invalidate();return;}SelectedScreen=box;SelectedScreen.Offset(Location);DialogResult=DialogResult.OK;}
         protected override bool ProcessCmdKey(ref Message msg,Keys keys){if(keys==Keys.Escape){DialogResult=DialogResult.Cancel;return true;}return base.ProcessCmdKey(ref msg,keys);}
     }

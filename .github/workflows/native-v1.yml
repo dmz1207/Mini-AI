@@ -1,0 +1,76 @@
+name: Verify v1 native inference
+on:
+  push:
+    branches: ['verify-v1-native']
+    paths: ['.github/workflows/native-v1.yml','tools/prepare_gpu_runtime.py']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  vulkan:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Get pinned native source
+        shell: pwsh
+        run: |
+          git init inference
+          git -C inference fetch --depth 1 https://github.com/avariiiiiiiiii/llama.cpp.git c828a2e883defef95fd6121ee1586efcce89ad40
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot fetch native source' }
+          git -C inference checkout --detach FETCH_HEAD
+          python tools/prepare_gpu_runtime.py inference
+          if ($LASTEXITCODE -ne 0) { throw 'Native source patch failed' }
+      - name: Install shader compiler on the hosted builder
+        shell: pwsh
+        run: |
+          $uri='https://sdk.lunarg.com/sdk/download/1.4.321.1/windows/vulkansdk-windows-X64-1.4.321.1.exe'
+          Invoke-WebRequest $uri -OutFile sdk.exe
+          if ((Get-FileHash sdk.exe -Algorithm SHA256).Hash.ToLower() -ne 'baaa4f7ca11ed3d82aa1c102b21208915485bbaa473068c763daa425cca468bd') { throw 'Shader SDK checksum mismatch' }
+          $sdk=Join-Path $PWD 'vulkan-sdk'
+          $p=Start-Process .\sdk.exe -ArgumentList "--root `"$sdk`" --accept-licenses --default-answer --confirm-command install" -WindowStyle Hidden -PassThru
+          if (-not $p.WaitForExit(600000) -or $p.ExitCode -ne 0) { throw 'Shader SDK installation failed' }
+          "VULKAN_SDK=$sdk" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build a portable Vulkan runtime
+        shell: pwsh
+        run: |
+          cmake -S inference -B build -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DGGML_VULKAN=ON -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF -DLLAMA_SUBPROCESS=OFF -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_BORINGSSL=OFF -DLLAMA_BUILD_LIBRESSL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=ON
+          if ($LASTEXITCODE -ne 0) { throw 'Native configuration failed' }
+          cmake --build build --config Release --target llama-server test-quantize-fns --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw 'Native compilation failed' }
+          & .\build\bin\Release\test-quantize-fns.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Quantization arithmetic checks failed' }
+      - name: Package runtime and source provenance
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory package -Force | Out-Null
+          New-Item -ItemType Directory package/vulkan -Force | Out-Null
+          Copy-Item build/bin/Release/llama-server.exe package/vulkan/
+          $loaderUri='https://sdk.lunarg.com/sdk/download/1.4.328.1/windows/VulkanRT-X64-1.4.328.1-Components.zip'
+          Invoke-WebRequest $loaderUri -OutFile loader.zip
+          if ((Get-FileHash loader.zip -Algorithm SHA256).Hash.ToLower() -ne '293efbb2c11e60429df7770f40e3c5c811a7fa42af81de0cc41e8718ddb2b373') { throw 'Vulkan loader checksum mismatch' }
+          Expand-Archive loader.zip loader
+          $loader=Get-ChildItem loader -Recurse -Filter vulkan-1.dll | Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
+          if (-not $loader) { throw 'App-local Vulkan loader missing' }
+          Copy-Item $loader.FullName package/vulkan/vulkan-1.dll
+          foreach ($variant in @('avx2','baseline')) {
+            $avx=if($variant -eq 'avx2'){'ON'}else{'OFF'}
+            cmake -S inference -B "build-$variant" -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF "-DGGML_AVX=$avx" "-DGGML_AVX2=$avx" "-DGGML_FMA=$avx" "-DGGML_F16C=$avx" -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DGGML_VULKAN=OFF -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF -DLLAMA_SUBPROCESS=OFF -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_BORINGSSL=OFF -DLLAMA_BUILD_LIBRESSL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=ON
+            if ($LASTEXITCODE -ne 0) { throw 'CPU configuration failed' }
+            cmake --build "build-$variant" --config Release --target llama-server test-quantize-fns --parallel 4
+            if ($LASTEXITCODE -ne 0) { throw 'CPU compilation failed' }
+            & ".\build-$variant\bin\Release\test-quantize-fns.exe"
+            if ($LASTEXITCODE -ne 0) { throw 'CPU arithmetic checks failed' }
+            New-Item -ItemType Directory "package/$variant" -Force | Out-Null
+            Copy-Item "build-$variant/bin/Release/llama-server.exe" "package/$variant/"
+          }
+          Get-ChildItem build/bin/Release/*.dll -ErrorAction SilentlyContinue | Copy-Item -Destination package/vulkan/
+          Copy-Item inference/LICENSE package/LICENSE-llama.cpp.txt
+          'c828a2e883defef95fd6121ee1586efcce89ad40' | Set-Content package/runtime-revision.txt -Encoding ascii
+          Get-FileHash tools/prepare_gpu_runtime.py -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower() } | Set-Content package/expansion-patch-sha256.txt -Encoding ascii
+          Get-ChildItem package -Recurse -File | Get-FileHash -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower()+'  '+[System.IO.Path]::GetRelativePath((Join-Path $PWD 'package'),$_.Path).Replace('\','/') } | Set-Content package/SHA256SUMS.txt -Encoding ascii
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: miniai-v1-native
+          path: package/
+          retention-days: 7

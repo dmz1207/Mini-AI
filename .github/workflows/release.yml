@@ -1,13 +1,15 @@
 name: Build and publish MiniAI
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
     inputs:
       version:
         description: 'Release tag'
-        default: 'v0.2.0'
+        default: 'v1.0.0'
         required: true
+      publish:
+        description: 'Publish or replace release binaries after verification'
+        type: boolean
+        default: false
 permissions:
   contents: write
 jobs:
@@ -25,18 +27,11 @@ jobs:
       - name: Build the small service
         shell: pwsh
         run: ./build.ps1
-      - name: Fetch pinned runtime and convert verified INT8 models
+      - name: Fetch pinned OCR and formula assets and verify Hy-MT2/STQ assets
         shell: pwsh
         run: |
           python tools/fetch_models.py --root .
           if ($LASTEXITCODE -ne 0) { throw 'Offline asset verification failed' }
-      - name: Include app-local Microsoft runtime dependencies
-        shell: pwsh
-        run: |
-          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
-          $crt = Get-ChildItem (Join-Path $vs 'VC\Redist\MSVC') -Directory | Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'x64\Microsoft.VC143.CRT' } | Where-Object { Test-Path -LiteralPath $_ -PathType Container } | Select-Object -First 1
-          if (-not $crt) { throw 'Cannot locate Microsoft redistributable runtime' }
-          foreach ($name in @('msvcp140.dll','msvcp140_1.dll','vcruntime140.dll','vcruntime140_1.dll')) { Copy-Item -LiteralPath (Join-Path $crt $name) -Destination runtime -Force }
       - name: Audit app-local dependency closure
         shell: pwsh
         run: |
@@ -59,7 +54,15 @@ jobs:
           Copy-Item work/tests/checks.json dist/service-checks.json
           Copy-Item work/tests/streaming-checks.json dist/streaming-checks.json
           Get-FileHash dist/MiniAI-windows-x64.zip,dist/MiniAI-Portable.exe -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower() + '  ' + (Split-Path $_.Path -Leaf) } | Set-Content dist/SHA256SUMS.txt -Encoding ascii
+      - name: Retain test diagnostics
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: miniai-verification
+          path: work/tests/
+          retention-days: 7
       - name: Publish the verified release
+        if: inputs.publish == true
         shell: pwsh
         run: |
           $tag = '${{ inputs.version }}'

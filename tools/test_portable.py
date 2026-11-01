@@ -32,22 +32,23 @@ def run(exe,output):
     passed(prepare.returncode==0,'developer extraction succeeds without Python on PATH')
     passed(all((root/name).is_file() and hashlib.sha256((root/name).read_bytes()).hexdigest()==value['sha256'] for name,value in manifest.items()),'every payload file matches its embedded SHA-256')
     check([p for p in root.rglob('*') if p.suffix.lower() in ('.exe','.dll','.pyd')]);passed(True,'EXE, DLL and PYD dependency closure is complete')
-    model=root/'models/translation/eng-zho/model.bin';stamp=model.stat().st_mtime_ns;crt=root/'runtime/msvcp140_1.dll';crt.unlink();engine=root/'runtime/translation-ct2/packages/ctranslate2/ctranslate2.dll'
+    model=root/'models/translation/hy-mt2.gguf';stamp=model.stat().st_mtime_ns;crt=root/'runtime/msvcp140_1.dll';crt.unlink();engine=root/'models/formula/encoder.onnx'
     with engine.open('r+b') as stream:stream.seek(-1,2);value=stream.read(1);stream.seek(-1,2);stream.write(bytes([value[0]^1]))
     repair=subprocess.run([str(launcher),'--extract-only'],cwd=home,env=env,timeout=120,creationflags=0x08000000)
     passed(repair.returncode==0 and crt.exists(),'missing OCR dependency is repaired')
-    passed(hashlib.sha256(engine.read_bytes()).hexdigest()==manifest['runtime/translation-ct2/packages/ctranslate2/ctranslate2.dll']['sha256'],'damaged translation engine is repaired')
+    passed(hashlib.sha256(engine.read_bytes()).hexdigest()==manifest['models/formula/encoder.onnx']['sha256'],'damaged formula OCR model is repaired')
     passed(model.stat().st_mtime_ns==stamp,'verified models are reused within an extraction session')
     process,cold,health=start();saved=[]
     try:
-        passed(health['ocr'] and health['translation'],'both models run from an isolated Unicode folder and system-only PATH')
+        passed(health['ocr'] and health['translation'] and health.get('formula'),'Hy-MT2, text OCR and formula OCR run from an isolated Unicode folder and system-only PATH')
         a=request('/v1/translate',{'text':'The control system remains stable.','target':'zh','mode':'fast'})
         b=request('/v1/translate',{'text':'该系统保持稳定。','target':'en','mode':'quality'})
         passed('控制' in a['text'] and '稳定' in a['text'] and a['beam_size']==1,'actual fast English-to-Chinese translation')
-        passed('system' in b['text'].lower() and 'stable' in b['text'].lower() and b['beam_size']==4,'actual quality Chinese-to-English translation')
+        passed('system' in b['text'].lower() and 'stable' in b['text'].lower() and b['beam_size']==1,'actual quality Chinese-to-English translation')
         from PIL import Image,ImageDraw,ImageFont
         image=Image.new('RGB',(1400,240),'white');ImageDraw.Draw(image).text((40,70),'The control system remains stable.',font=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',46),fill='black');photo=output/'photo.jpg';image.save(photo,quality=94)
         result=request('/v1/ocr',{'image_base64':base64.b64encode(photo.read_bytes()).decode()});passed('control system' in result['text'],'actual photo OCR uses bundled dependencies')
+        formula=request('/v1/ocr',{'image_base64':base64.b64encode(photo.read_bytes()).decode(),'formula':True});passed(formula.get('formula') is True and any(line.get('kind')=='text' for line in formula.get('lines',[])),'formula-aware OCR keeps ordinary text classified as text')
         folder=home/'MiniAI Results';passed(not folder.exists(),'instant API OCR and translation leave no result files')
         for kind,text,source in [('ocr',result['text'],''),('translation',a['text'],'The control system remains stable.')]:
             value=request('/v1/results',{'kind':kind,'text':text,'source':source,'target':'zh'});path=Path(value['file']);saved.append((path,path.read_bytes()));passed(path.parent==folder and path.is_file(),'regular '+kind+' result is saved outside the temporary runtime')
