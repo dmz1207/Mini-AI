@@ -34,7 +34,7 @@ jobs:
       - name: Build a portable Vulkan runtime
         shell: pwsh
         run: |
-          cmake -S inference -B build -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DGGML_VULKAN=ON -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_BORINGSSL=OFF -DLLAMA_BUILD_LIBRESSL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=ON
+          cmake -S inference -B build -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=OFF -DGGML_AVX2=OFF -DGGML_FMA=OFF -DGGML_F16C=OFF -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DGGML_VULKAN=ON -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF -DLLAMA_SUBPROCESS=OFF -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_BORINGSSL=OFF -DLLAMA_BUILD_LIBRESSL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=ON
           if ($LASTEXITCODE -ne 0) { throw 'Native configuration failed' }
           cmake --build build --config Release --target llama-server test-quantize-fns --parallel 4
           if ($LASTEXITCODE -ne 0) { throw 'Native compilation failed' }
@@ -44,14 +44,33 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory package -Force | Out-Null
-          Copy-Item build/bin/Release/llama-server.exe package/
-          Get-ChildItem build/bin/Release/*.dll -ErrorAction SilentlyContinue | Copy-Item -Destination package/
+          New-Item -ItemType Directory package/vulkan -Force | Out-Null
+          Copy-Item build/bin/Release/llama-server.exe package/vulkan/
+          $loaderUri='https://sdk.lunarg.com/sdk/download/1.4.328.1/windows/VulkanRT-X64-1.4.328.1-Components.zip'
+          Invoke-WebRequest $loaderUri -OutFile loader.zip
+          if ((Get-FileHash loader.zip -Algorithm SHA256).Hash.ToLower() -ne '293efbb2c11e60429df7770f40e3c5c811a7fa42af81de0cc41e8718ddb2b373') { throw 'Vulkan loader checksum mismatch' }
+          Expand-Archive loader.zip loader
+          $loader=Get-ChildItem loader -Recurse -Filter vulkan-1.dll | Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
+          if (-not $loader) { throw 'App-local Vulkan loader missing' }
+          Copy-Item $loader.FullName package/vulkan/vulkan-1.dll
+          foreach ($variant in @('avx2','baseline')) {
+            $avx=if($variant -eq 'avx2'){'ON'}else{'OFF'}
+            cmake -S inference -B "build-$variant" -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF "-DGGML_AVX=$avx" "-DGGML_AVX2=$avx" "-DGGML_FMA=$avx" "-DGGML_F16C=$avx" -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DGGML_VULKAN=OFF -DLLAMA_BUILD_UI=OFF -DLLAMA_USE_PREBUILT_UI=OFF -DLLAMA_SUBPROCESS=OFF -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_BORINGSSL=OFF -DLLAMA_BUILD_LIBRESSL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=OFF -DLLAMA_BUILD_SERVER=ON
+            if ($LASTEXITCODE -ne 0) { throw 'CPU configuration failed' }
+            cmake --build "build-$variant" --config Release --target llama-server test-quantize-fns --parallel 4
+            if ($LASTEXITCODE -ne 0) { throw 'CPU compilation failed' }
+            & ".\build-$variant\bin\Release\test-quantize-fns.exe"
+            if ($LASTEXITCODE -ne 0) { throw 'CPU arithmetic checks failed' }
+            New-Item -ItemType Directory "package/$variant" -Force | Out-Null
+            Copy-Item "build-$variant/bin/Release/llama-server.exe" "package/$variant/"
+          }
+          Get-ChildItem build/bin/Release/*.dll -ErrorAction SilentlyContinue | Copy-Item -Destination package/vulkan/
           Copy-Item inference/LICENSE package/LICENSE-llama.cpp.txt
           'c828a2e883defef95fd6121ee1586efcce89ad40' | Set-Content package/runtime-revision.txt -Encoding ascii
           Get-FileHash tools/prepare_gpu_runtime.py -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower() } | Set-Content package/expansion-patch-sha256.txt -Encoding ascii
-          Get-FileHash package/* -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower()+'  '+(Split-Path $_.Path -Leaf) } | Set-Content package/SHA256SUMS.txt -Encoding ascii
+          Get-ChildItem package -Recurse -File | Get-FileHash -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower()+'  '+[System.IO.Path]::GetRelativePath((Join-Path $PWD 'package'),$_.Path).Replace('\','/') } | Set-Content package/SHA256SUMS.txt -Encoding ascii
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: miniai-v1-vulkan
+          name: miniai-v1-native
           path: package/
           retention-days: 7
