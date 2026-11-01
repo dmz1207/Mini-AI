@@ -1,13 +1,54 @@
 {
   "date": "2026-11-01",
-  "run_id": 41253219630,
-  "url": "https://github.com/dmz1207/Mini-AI/actions/runs/41253219630",
-  "source_commit": "d4ba8483068cc441babdbadb7a4380df48826b6c",
+  "version": "0.1.1",
+  "run_id": 41256680942,
+  "url": "https://github.com/dmz1207/Mini-AI/actions/runs/41256680942",
+  "source_commit": "2af94f8968ba2da1357723a4164db618e6189e50",
   "conclusion": "success",
   "service_assertions": 39,
-  "standalone_desktop_assertions": 5,
-  "optional_saved_reader_layer_fixture": "not present in the independent CI checkout; local count includes this additional check",
-  "release_url": "https://github.com/dmz1207/Mini-AI/releases/tag/v0.1.0",
-  "package_bytes": 580400980,
-  "package_sha256": "733f3b89c4311e06da405028e9f3549dddfd2ae4a0c118bd087dbeabaa664277"
+  "standalone_desktop_assertions": 11,
+  "portable_exe_assertions": 10,
+  "native_run_id": 41254989064,
+  "release_url": "https://github.com/dmz1207/Mini-AI/releases/tag/v0.1.1",
+  "assets": [
+    {
+      "name": "MiniAI-Portable.exe",
+      "bytes": 580407656,
+      "sha256": "529a5620da12a082310150da27d4513731e46ee9975652080af644726b7d5d3d",
+      "url": "https://github.com/dmz1207/Mini-AI/releases/download/v0.1.1/MiniAI-Portable.exe"
+    },
+    {
+      "name": "MiniAI-windows-x64.zip",
+      "bytes": 580387176,
+      "sha256": "10c6d21a59148dc76304c6963de88aa30b61031d421e8b0a8b17934d3fb5a848",
+      "url": "https://github.com/dmz1207/Mini-AI/releases/download/v0.1.1/MiniAI-windows-x64.zip"
+    },
+    {
+      "name": "service-checks.json",
+      "bytes": 1937,
+      "sha256": "25adf67138bd7cd882acf1f26c943de88aec046939021c50582f6602efea4166",
+      "url": "https://github.com/dmz1207/Mini-AI/releases/download/v0.1.1/service-checks.json"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 177,
+      "sha256": "5399e011b028fbc224ffc95789e2ca2a94b4f1cafe8cce2313158e157ff3a9e7",
+      "url": "https://github.com/dmz1207/Mini-AI/releases/download/v0.1.1/SHA256SUMS.txt"
+    }
+  ],
+  "portable_ci": {
+    "cold_start_seconds": 5.928,
+    "repair_seconds": 0.932
+  },
+  "pdf_ci": {
+    "run_id": 41256680250,
+    "url": "https://github.com/dmz1207/Mini-PDF/actions/runs/41256680250",
+    "source_commit": "1ee00ab8ce0660e5f5ead047e82298b97521029e",
+    "conclusion": "success",
+    "checked": 4211,
+    "new_regressions": 0,
+    "known_exceptions": 62,
+    "text_edit_assertions": 123,
+    "office_form_assertions": 67
+  }
 }
