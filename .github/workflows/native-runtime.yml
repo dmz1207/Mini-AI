@@ -4,6 +4,7 @@ on:
     paths:
       - '.github/workflows/native-runtime.yml'
       - 'tools/prepare_model.py'
+      - 'tools/check_dependencies.py'
   workflow_dispatch:
 permissions:
   contents: read
@@ -30,10 +31,24 @@ jobs:
         run: |
           $fast = '${{ matrix.variant }}' -eq 'avx2'
           $switch = if ($fast) { 'ON' } else { 'OFF' }
-          cmake -S inference -B build -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=$switch -DGGML_AVX2=$switch -DGGML_FMA=$switch -DGGML_F16C=$switch -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=ON -DLLAMA_BUILD_SERVER=ON
+          cmake -S inference -B build -A x64 -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DGGML_AVX=$switch -DGGML_AVX2=$switch -DGGML_FMA=$switch -DGGML_F16C=$switch -DGGML_AVX512=OFF -DGGML_OPENMP=OFF -DLLAMA_CURL=OFF -DLLAMA_OPENSSL=OFF -DLLAMA_BUILD_BORINGSSL=OFF -DLLAMA_BUILD_LIBRESSL=OFF -DLLAMA_BUILD_TESTS=ON -DLLAMA_BUILD_EXAMPLES=ON -DLLAMA_BUILD_SERVER=ON
           if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed' }
           cmake --build build --config Release --target llama-server test-quantize-fns --parallel 4
           if ($LASTEXITCODE -ne 0) { throw 'Native compilation failed' }
+      - name: Reject external native dependencies and test isolated startup
+        shell: pwsh
+        run: |
+          python tools/check_dependencies.py --file build/bin/Release/llama-server.exe --system-only --output dependency-check.json
+          if ($LASTEXITCODE -ne 0) { throw 'The portable translation runtime must only import Windows system DLLs' }
+          New-Item -ItemType Directory -Path clean-runtime -Force | Out-Null
+          Copy-Item build/bin/Release/llama-server.exe clean-runtime/
+          $savedPath=$env:PATH
+          try {
+            $env:PATH="$env:WINDIR\System32;$env:WINDIR"
+            $p=Start-Process .\clean-runtime\llama-server.exe -ArgumentList '--version' -WorkingDirectory clean-runtime -WindowStyle Hidden -PassThru -RedirectStandardOutput clean-out.txt -RedirectStandardError clean-err.txt
+            if (-not $p.WaitForExit(30000)) { Stop-Process -Id $p.Id -Force; throw 'Isolated native startup timed out' }
+            if ($p.ExitCode -ne 0) { throw "Isolated native startup failed: $($p.ExitCode)" }
+          } finally { $env:PATH=$savedPath }
       - name: Check quantization arithmetic
         shell: pwsh
         run: |
@@ -82,6 +97,7 @@ jobs:
           Get-ChildItem build\bin\Release\*.dll -ErrorAction SilentlyContinue | Copy-Item -Destination package\
           Copy-Item inference\LICENSE package\LICENSE-llama.cpp.txt
           Copy-Item inference-results.json package\
+          Copy-Item dependency-check.json package\
           'c828a2e883defef95fd6121ee1586efcce89ad40' | Set-Content package\runtime-revision.txt
           $hashes = Get-ChildItem package -File | Get-FileHash -Algorithm SHA256 | ForEach-Object { $_.Hash.ToLower() + '  ' + (Split-Path $_.Path -Leaf) }
           $hashes | Set-Content package\checksums.txt -Encoding ascii
