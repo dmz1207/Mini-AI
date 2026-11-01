@@ -9,18 +9,19 @@
     "service": 49,
     "streaming_and_cancel": 38,
     "language_targets": 38,
-    "formula_mathml_ui": 27,
-    "formula_endpoint_structure": 6,
+    "formula_mathml_ui": 30,
+    "formula_endpoint_structure": 9,
     "desktop": 11,
-    "bubble_lifecycle": 11,
+    "bubble_lifecycle": 15,
     "image_ocr_translation": 12
   },
-  "focused_checks": 192,
+  "focused_checks": 202,
   "reader": {
     "version": "0.12.4",
     "core_assertions": 847,
     "independent_pdf_checks": 33,
-    "actual_ieee_paper_selection_assertions": 22
+    "actual_ieee_paper_selection_assertions": 22,
+    "file_screenshot_ocr_assertions": 21
   },
   "native": {
     "source_revision": "c828a2e883defef95fd6121ee1586efcce89ad40",
@@ -32,7 +33,8 @@
     "OCR and translation checks are fixtures and smoke cases, not an accuracy benchmark.",
     "Formula endpoint fixture verifies exponent structure. Some base symbols/operators in the clean example were substituted; verify and correct recognized TeX.",
     "MathML clipboard formats and schema were tested; the MathType application was not installed.",
-    "Rare language samples were checked for completion and expected scripts, not native-speaker quality."
+    "Rare language samples were checked for completion and expected scripts, not native-speaker quality.",
+    "Dense multiline equations and calligraphic symbols remain limited. The user requested retaining the existing formula model; failed recognition offers an editable draft and original-image review."
   ],
   "portable_verification": "Separate portable-checks.json is generated from the final distributed EXE, including payload hashes, isolated startup, repair, shared clients and cleanup."
 }

@@ -16,3 +16,6 @@ Mini-AI source is MIT licensed. Included components retain their own licenses:
 | Microsoft VC++ redistributable DLLs | App-local ONNX dependencies | Microsoft Visual Studio runtime redistribution terms; original binaries are unmodified |
 
 Windows .NET Framework, WPF, WinForms, graphics/image codecs and Cabinet compression are operating-system facilities, not embedded redistributable runtimes. OPUS-MT, CTranslate2, SentencePiece, MKL, Python and an embedded browser are not shipped in this release.
+# Test fixture
+
+`tools/fixtures/formula-fractions.png` is `tests/test_files/6.png` from RapidAI/RapidLaTeXOCR (MIT), used only for development regression checks. Source: https://github.com/RapidAI/RapidLaTeXOCR . It is not part of the executable payload.
