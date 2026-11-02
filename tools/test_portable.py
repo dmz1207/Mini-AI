@@ -1,5 +1,5 @@
 """Test the distributed EXE, repair, sharing, persistent results and exit cleanup."""
-import argparse,base64,ctypes,hashlib,json,os,shutil,subprocess,time,urllib.request,zipfile
+import argparse,base64,ctypes,hashlib,json,os,shutil,subprocess,threading,time,urllib.request,zipfile
 from pathlib import Path
 from check_dependencies import check
 
@@ -7,6 +7,7 @@ def run(exe,output):
     exe=Path(exe).resolve();output=Path(output).resolve();output.mkdir(parents=True,exist_ok=True)
     home=output/'portable folder 空格';home.mkdir(exist_ok=True);launcher=home/'MiniAI-Portable.exe';shutil.copy2(exe,launcher);root=home/'MiniAI';checks=[]
     env=dict(os.environ,PATH=os.environ['WINDIR']+'/System32;'+os.environ['WINDIR'],TEMP=str(home),TMP=str(home))
+    kernel=ctypes.WinDLL('kernel32',use_last_error=True);kernel.CreateFileW.argtypes=[ctypes.c_wchar_p,ctypes.c_uint,ctypes.c_uint,ctypes.c_void_p,ctypes.c_uint,ctypes.c_uint,ctypes.c_void_p];kernel.CreateFileW.restype=ctypes.c_void_p;kernel.CloseHandle.argtypes=[ctypes.c_void_p]
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}));connection=None
     def passed(value,name):
         if not value:raise AssertionError(name)
@@ -38,7 +39,7 @@ def run(exe,output):
     passed(repair.returncode==0 and crt.exists(),'missing OCR dependency is repaired')
     passed(hashlib.sha256(engine.read_bytes()).hexdigest()==manifest['models/formula/encoder.onnx']['sha256'],'damaged formula OCR model is repaired')
     passed(model.stat().st_mtime_ns==stamp,'verified models are reused within an extraction session')
-    process,cold,health=start();saved=[]
+    process,cold,health=start();saved=[];delayed=None
     try:
         passed(health['ocr'] and health['translation'] and health.get('formula'),'Hy-MT2, text OCR and formula OCR run from an isolated Unicode folder and system-only PATH')
         a=request('/v1/translate',{'text':'The control system remains stable.','target':'zh','mode':'fast'})
@@ -53,10 +54,16 @@ def run(exe,output):
         for kind,text,source in [('ocr',result['text'],''),('translation',a['text'],'The control system remains stable.')]:
             value=request('/v1/results',{'kind':kind,'text':text,'source':source,'target':'zh'});path=Path(value['file']);saved.append((path,path.read_bytes()));passed(path.parent==folder and path.is_file(),'regular '+kind+' result is saved outside the temporary runtime')
     finally:
+        # A temporary scanner/file handle must not leave an owned executable behind.
+        held=kernel.CreateFileW(str(root/'runtime/translation/baseline/llama-server.exe'),0x80000000,3,None,3,0,None)
+        if held==ctypes.c_void_p(-1).value:raise ctypes.WinError(ctypes.get_last_error())
+        delayed=threading.Timer(3.5,lambda:kernel.CloseHandle(held));delayed.start()
         try:request('/v1/shutdown',{})
         except OSError:pass
         process.wait(timeout=60)
+        delayed.join(timeout=10)
     passed(not root.exists(),'normal exit removes the extracted models, runtime, credentials and temporary folder')
+    passed(not delayed.is_alive(),'cleanup waits for a transient native-file lock to be released')
     passed(all(path.read_bytes()==value for path,value in saved),'OCR and translation results survive runtime cleanup')
     passed(launcher.is_file(),'the standalone EXE is retained')
     # Share the service through a real OS file lease, then release the final client.

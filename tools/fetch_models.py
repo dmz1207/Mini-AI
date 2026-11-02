@@ -29,6 +29,15 @@ def parallel_download(url,path,size,opener,timeout):
             offset,value=future.result();output.seek(offset);output.write(value)
 
 def fetch(urls,path,sha,size):
+    errors=[]
+    for attempt in range(3):
+        try:return fetch_once(urls,path,sha,size)
+        except RuntimeError as error:
+            errors.append(str(error))
+            if attempt<2:time.sleep(2*(attempt+1))
+    raise RuntimeError('Asset fetch failed after retries: '+'; '.join(errors))
+
+def fetch_once(urls,path,sha,size):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     if path.exists() and digest(path)==sha:return
     errors=[];pending=path.with_suffix(path.suffix+'.part')

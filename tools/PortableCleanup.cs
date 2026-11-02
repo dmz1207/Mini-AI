@@ -17,7 +17,7 @@ namespace MiniAI.Portable {
             string folder=Launcher.Target(root,relative);if(!Directory.Exists(folder))return false;
             foreach(string path in Directory.GetFiles(folder,"*.lock"))try{using(var lease=new FileStream(path,FileMode.Open,FileAccess.ReadWrite,FileShare.None)){} }catch(FileNotFoundException){}catch(IOException){return true;}catch(UnauthorizedAccessException){return true;}return false;
         }
-        static void Delete(string path){for(int attempt=0;attempt<20;attempt++)try{if(File.Exists(path))File.Delete(path);return;}catch(IOException){Thread.Sleep(100);}catch(UnauthorizedAccessException){return;}}
+        static void Delete(string path){for(int attempt=0;attempt<80;attempt++)try{if(File.Exists(path))File.Delete(path);return;}catch(IOException){Thread.Sleep(125);}catch(UnauthorizedAccessException){Thread.Sleep(125);}}
         internal static void Run(string root) {
             try {
                 if(!Directory.Exists(root)||(File.GetAttributes(root)&FileAttributes.ReparsePoint)!=0)return;
