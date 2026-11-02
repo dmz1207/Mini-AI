@@ -67,9 +67,30 @@ def fetch_once(urls,path,sha,size):
             except Exception as error:errors.append(type(error).__name__+': '+str(error))
     raise RuntimeError('Cannot fetch '+path.name+'; '+'; '.join(errors))
 
+def ocr_assets(root,manifest):
+    items=manifest['ocr']+manifest.get('ocr_fast',[])
+    missing=[item for item in items if not (root/item['path']).exists() or digest(root/item['path'])!=item['sha256']]
+    mirror=manifest.get('ocr_archive')
+    if not missing or not mirror:return
+    archive=root/'work/downloads/ocr-models.zip'
+    fetch([mirror['url']],archive,mirror['sha256'],mirror['bytes'])
+    with zipfile.ZipFile(archive) as bundle:
+        if bundle.testzip() is not None:raise ValueError('OCR dependency archive is damaged')
+        for item in missing:
+            target=(root/item['path']).resolve()
+            if not target.is_relative_to(root):raise ValueError('Invalid OCR destination')
+            entry=bundle.getinfo(item['path'])
+            if entry.file_size!=item['bytes']:raise ValueError('Unexpected OCR file size')
+            data=bundle.read(entry)
+            if hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('OCR asset checksum mismatch')
+            target.parent.mkdir(parents=True,exist_ok=True);pending=target.with_suffix(target.suffix+'.part');pending.write_bytes(data);os.replace(pending,target)
+    print('Verified pinned OCR dependency archive.',flush=True)
+
 def install(root):
     root=Path(root).resolve();manifest=json.loads((Path(__file__).resolve().parents[1]/'assets.json').read_text(encoding='utf-8'))
     work=root/'work/downloads';work.mkdir(parents=True,exist_ok=True)
+    try:ocr_assets(root,manifest)
+    except (OSError,ValueError,RuntimeError) as error:print('OCR mirror unavailable; trying upstream: '+str(error),flush=True)
     formula=manifest.get('formula',{}).get('files',[])
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
         tasks=[pool.submit(fetch,item['urls'],root/item['path'],item['sha256'],item['bytes']) for item in manifest['ocr']+manifest.get('ocr_fast',[])+formula]

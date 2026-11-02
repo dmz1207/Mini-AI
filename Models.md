@@ -24,6 +24,8 @@ A real UHD 620 Vulkan run completed locally, but was slower than the CPU; furthe
 
 PP-OCRv6 medium is the quality/PDF default. PP-OCRv6 tiny handles fast screenshots/photos. Both matching dictionaries are bundled. ONNX Runtime and its required native VC++ DLLs are app-local, avoiding missing-DLL failures on machines without developer tools.
 
+Source builds fetch the exact OCR files from the pinned `MiniAI-ocr-models.zip` release dependency first, avoiding upstream ModelScope timeouts. Both the archive and each extracted model/dictionary are SHA-256 checked against `assets.json`. Upstream URLs remain a fallback. This changes download reliability only; model weights and recognition behavior are unchanged.
+
 RapidLaTeX OCR encoder, decoder, resizer and tokenizer are pinned to `inYourOwnBrowser/rapid-latex-ocr-onnx` revision `0d0a23977b50433b07cdf95513ed7b7e45d3a761`. Dedicated formula crops bypass ordinary text detection. Mixed screenshots first identify text/math regions; heuristic classification can miss or misclassify content. A bounded decoder reports failure instead of silently accepting a cut-off expression. Models are reused until idle and cancellation is checked between decode steps.
 
 WpfMath 0.12.0 provides a compact offline formula preview using Windows WPF. A separate bounded C# parser exports presentation MathML with the original TeX annotation. Unsupported structures retain editable TeX. This is neither Mathpix's model nor a claim of Mathpix-level recognition accuracy.

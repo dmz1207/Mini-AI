@@ -219,5 +219,10 @@
         ]
       }
     ]
+  },
+  "ocr_archive": {
+    "url": "https://github.com/dmz1207/Mini-AI/releases/download/v1.0.0/MiniAI-ocr-models.zip",
+    "bytes": 111177053,
+    "sha256": "624ca8732b070b07fb2b4a3d6b8468dbbb4ea149757abcb63c8a352c2a4b17eb"
   }
 }
