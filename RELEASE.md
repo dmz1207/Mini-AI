@@ -1,4 +1,24 @@
-# Mini-AI 1.0.0
+# Mini-AI 1.0.1
+
+Formula layout and export maintenance update. The bundled OCR and Hy-MT2 model
+weights, translation modes, and supported languages are unchanged.
+
+- Use glyph-relative geometry for long multiline formulas while retaining the
+  whole-image path for compact expressions. Protect fraction groups and bracket
+  spans; retain small ink components rather than filtering them away.
+- Confirm isolated equation numbers with the bundled text recognizer before
+  excluding them from formula decoding. Use the formula model's native
+  512-position limit and faster bulk pixel access.
+- Preserve structured TeX when ordinary OCR disagrees. Fix Unicode superscript
+  conversion and export calligraphic/font declarations and over/under annotations
+  to editable MathML.
+- Add generated multiline regression coverage and keep private paper samples out
+  of the repository. See Verification.md for tested scope and known failures.
+
+Dense mathematics and unusual glyphs still need manual review. Geometry improves
+layout handling; it does not retrain the existing model or make it Mathpix-level.
+
+## Original 1.0.0 features
 
 First formal release: a self-contained offline OCR, formula and translation tool, with Mini PDF integration.
 

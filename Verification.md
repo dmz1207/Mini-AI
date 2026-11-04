@@ -1,4 +1,32 @@
-# Verification — Mini-AI 1.0.0
+# Verification — Mini-AI 1.0.1
+
+The 1.0.1 revision adds glyph-relative row geometry, fraction/bracket protection,
+confirmed margin-number separation, the model's native 512-position decoding
+limit, bulk pixel conversion, and additional MathML notation. Model files and
+translation weights are unchanged.
+
+New local checks on 2026-11-04:
+
+- 40 formula, MathML, clipboard and compact-dialog assertions, including six-row
+  coverage of every dark pixel and keeping a fraction intact.
+- 14 formula crops from 11 private papers across IEEE, Elsevier, Springer,
+  Wiley, Taylor & Francis, MDPI and Oxford. Under a 20-second per-crop bound,
+  the previous build returned TeX for 4 crops, and the revision for 9. The four
+  previously returned strings were unchanged. **This is completion coverage,
+  not a recognition-accuracy score.** Several returned equations still contain
+  substitutions. A six-line boundary-condition case improved; dense matrices,
+  hybrid cases, and the calligraphic L/V stress case remain problematic.
+- Public/generated controls retain the exact upstream fraction transcription,
+  a correct three-row control, and the original single-line paths. The six-row
+  control now preserves six rows, but still misreads some individual glyphs.
+- Lossless packaging was audited against the existing 719,959,648-byte EXE:
+  98.4% of compressed payload bytes are models. The only identical files were
+  small runtime notices. Sampled byte/bit/XOR transforms gave no consistent
+  improvement; doubling 8 MiB frames saved only 32 bytes per 16 MiB sample.
+  The established codec and all original model hashes are retained.
+
+The following broader validation belongs to the 1.0.0 baseline and is retained
+for provenance; it was not all repeated for this revision.
 
 Local Windows validation on an i7-8565U (4 physical cores / 8 logical threads), using the real bundled models and native runtime. `verification.json` records counts and limitations.
 

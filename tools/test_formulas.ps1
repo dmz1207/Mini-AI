@@ -8,7 +8,7 @@ $runner=Join-Path $OutputDirectory 'FormulaTests.exe'
 & $compiler /nologo /platform:x64 /optimize+ /codepage:65001 /target:winexe /main:MiniAI.FormulaTests ('/out:'+$runner) ('/resource:'+(Join-Path $Root 'assets\EnglishWords.gz')+',MiniAI.EnglishWords') /reference:System.dll /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Web.Extensions.dll /reference:System.Xaml.dll /reference:System.Xml.dll /reference:System.Xml.Linq.dll ('/reference:'+(Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\WPF\WindowsBase.dll')) ('/reference:'+(Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\WPF\PresentationCore.dll')) ('/reference:'+(Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\WPF\PresentationFramework.dll')) ('/reference:'+(Join-Path $Root 'assets\lib\WpfMath.dll')) ('/resource:'+(Join-Path $Root 'assets\lib\WpfMath.dll')+',MiniAI.WpfMath') $sources (Join-Path $PSScriptRoot 'FormulaTests.cs')
 if($LASTEXITCODE -ne 0){throw 'Formula test compilation failed.'}
 $log=Join-Path $OutputDirectory 'formula-checks.txt'
-$process=Start-Process -FilePath $runner -ArgumentList ('"'+$OutputDirectory+'"') -WindowStyle Hidden -PassThru
+$process=Start-Process -FilePath $runner -ArgumentList ('"'+$OutputDirectory+'" "'+$Root+'"') -WindowStyle Hidden -PassThru
 if(-not $process.WaitForExit(30000)){throw 'Formula tests timed out.'}
 Get-Content -LiteralPath $log
 if($process.ExitCode -ne 0){throw 'Formula checks failed.'}

@@ -85,6 +85,23 @@ namespace MiniAI {
         }
         static void AppendColumns(List<Region> output,List<Region> band,float split){var a=new List<Region>();var b=new List<Region>();foreach(var item in band)(item.X<split?a:b).Add(item);output.AddRange(Rows(a));output.AddRange(Rows(b));}
         sealed class Candidate {internal int Index,Width,Height,RecWidth;internal Region Region;internal PointF[] Corners;}
+        // A known single line does not need detection, which can clip narrow
+        // parentheses and equation numbers at the edges of a tight crop.
+        internal OcrLine ReadLine(Bitmap image) {
+            int margin=Math.Max(2,image.Height/8);
+            using(var padded=new Bitmap(image.Width+margin*2,image.Height+margin*2)) {
+                using(var g=Graphics.FromImage(padded)){g.Clear(Color.White);g.DrawImageUnscaled(image,margin,margin);}
+                int width=Math.Max(32,Math.Min(2048,(int)Math.Ceiling(padded.Width*48.0/padded.Height)));
+                var scores=recognizer.Run(Pixels(padded,width,48,false),new long[]{1,3,48,width});
+                Guard.Check(scores.Shape.Length==3&&scores.Shape[0]==1&&scores.Shape[2]==keys.Length,"Unexpected OCR recognition model output.");
+                return DecodeLine(scores.Data,0,(int)scores.Shape[1],keys.Length);
+            }
+        }
+        OcrLine DecodeLine(float[] scores,int offset,int steps,int vocabulary) {
+            var text=new StringBuilder();int previous=0,letters=0;double confidence=0;
+            for(int t=0;t<steps;t++){int at=offset+t*vocabulary,best=0;float score=scores[at];for(int c=1;c<vocabulary;c++)if(scores[at+c]>score){best=c;score=scores[at+c];}if(best!=0&&best!=previous){text.Append(keys[best]);confidence+=score;letters++;}previous=best;}
+            string value=text.ToString().Trim();return value.Length>0&&letters>0&&confidence/letters>=.45?new OcrLine{Text=value,Confidence=(float)(confidence/letters)}:null;
+        }
         internal List<OcrLine> Read(Bitmap image,Action<int,int> progress) {
             double scale=Math.Min(1,1536.0/Math.Max(image.Width,image.Height));int width=Math.Max(32,(int)Math.Round(image.Width*scale/32)*32),height=Math.Max(32,(int)Math.Round(image.Height*scale/32)*32);
             var tensor=detector.Run(Pixels(image,width,height,true),new long[]{1,3,height,width});var regions=Regions(tensor);var candidates=new List<Candidate>();float sx=image.Width/(float)width,sy=image.Height/(float)height;
@@ -107,9 +124,7 @@ namespace MiniAI {
                 }
                 var scores=recognizer.Run(data,new long[]{count,3,48,recWidth});Guard.Check(scores.Shape.Length==3&&scores.Shape[0]==count,"Unexpected OCR recognition model output.");int steps=(int)scores.Shape[1],vocabulary=(int)scores.Shape[2];Guard.Check(vocabulary==keys.Length,"The OCR dictionary does not match the recognition model.");
                 for(int n=0;n<count;n++) {
-                    var text=new StringBuilder();int previous=0,letters=0;double confidence=0;
-                    for(int t=0;t<steps;t++){int offset=(n*steps+t)*vocabulary,best=0;float score=scores.Data[offset];for(int c=1;c<vocabulary;c++)if(scores.Data[offset+c]>score){best=c;score=scores.Data[offset+c];}if(best!=0&&best!=previous){text.Append(keys[best]);confidence+=score;letters++;}previous=best;}
-                    string value=text.ToString().Trim();if(value.Length>0&&letters>0&&confidence/letters>=0.45){var item=candidates[first+n];for(int c=0;c<4;c++)item.Corners[c]=new PointF(Math.Max(0,Math.Min(1,item.Corners[c].X/image.Width)),Math.Max(0,Math.Min(1,item.Corners[c].Y/image.Height)));recognized[item.Index]=new OcrLine{Text=value,Confidence=(float)(confidence/letters),Corners=item.Corners};}
+                    var line=DecodeLine(scores.Data,n*steps*vocabulary,steps,vocabulary);if(line!=null){var item=candidates[first+n];for(int c=0;c<4;c++)item.Corners[c]=new PointF(Math.Max(0,Math.Min(1,item.Corners[c].X/image.Width)),Math.Max(0,Math.Min(1,item.Corners[c].Y/image.Height)));line.Corners=item.Corners;recognized[item.Index]=line;}
                 }
             }
             if(progress!=null)progress(candidates.Count,candidates.Count);var output=new List<OcrLine>();foreach(var line in recognized)if(line!=null)output.Add(line);return output;
