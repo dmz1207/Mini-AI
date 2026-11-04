@@ -23,6 +23,7 @@ namespace MiniAI {
         string url,key,isa="not loaded",device="CPU";
         DateTime lastUse=DateTime.UtcNow;
         volatile bool disposed,ready;
+        bool gpuFailed;
         int pendingRequests;
 
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
@@ -53,7 +54,7 @@ namespace MiniAI {
                 if(server!=null&&!server.HasExited)return;
                 if(server!=null){server.Dispose();server=null;}if(group!=null){group.Dispose();group=null;}
                 lock(logGate){errors.Length=0;}
-                string preference=Environment.GetEnvironmentVariable("MINIAI_DEVICE")??"cpu";string[] variants=IsProcessorFeaturePresent(40)?(preference=="cpu"?new[]{"avx2","baseline"}:new[]{"vulkan","avx2","baseline"}):(preference=="cpu"?new[]{"baseline"}:new[]{"vulkan","baseline"});
+                string preference=gpuFailed?"cpu":Environment.GetEnvironmentVariable("MINIAI_DEVICE")??"auto";string[] variants=IsProcessorFeaturePresent(40)?(preference=="cpu"?new[]{"avx2","baseline"}:new[]{"vulkan","avx2","baseline"}):(preference=="cpu"?new[]{"baseline"}:new[]{"vulkan","baseline"});
                 foreach(string variant in variants){
                     string executable=Path.Combine(root,"runtime/translation",variant,"llama-server.exe");if(!File.Exists(executable))continue;
                     try{NativeDependencies.Check(executable);}catch(Exception error){AddError(error.Message);continue;}
@@ -71,7 +72,7 @@ namespace MiniAI {
                     try{process.Start();server=process;try{process.PriorityClass=Volatile.Read(ref pendingRequests)>0?ProcessPriorityClass.Normal:ProcessPriorityClass.BelowNormal;}catch(System.ComponentModel.Win32Exception){}group=new ProcessGroup(process);process.BeginOutputReadLine();process.BeginErrorReadLine();}
                     catch(Exception error){try{if(!process.HasExited)process.Kill();}catch{}process.Dispose();AddError(error.Message);server=null;continue;}
                     var watch=Stopwatch.StartNew();
-                    while(watch.ElapsedMilliseconds<90000&&!process.HasExited){
+                    while(watch.ElapsedMilliseconds<(variant=="vulkan"?30000:90000)&&!process.HasExited){
                         if(canceled()){Stop();throw new OperationCanceledException();}
                         try{var health=Json.Request(url+"/health",null,key,2);if(Json.Get(health,"status")=="ok"){ready=true;lastUse=DateTime.UtcNow;return;}}
                         catch(WebException){}catch(IOException){}
@@ -82,7 +83,7 @@ namespace MiniAI {
             }
             throw new IOException("The compatible Hy/STQ translation engine could not start. "+errors.ToString());
         }
-        internal static bool IntegratedDevice(string description){return System.Text.RegularExpressions.Regex.IsMatch(description,@"(?i)(Intel.*(?:UHD|HD Graphics|Iris)|AMD Radeon(?:\(TM\))? Graphics|Radeon.*(?:Vega|[6789]80M))");}
+        internal static bool IntegratedDevice(string description){return System.Text.RegularExpressions.Regex.IsMatch(description,@"(?i)(Intel.*(?:UHD|HD Graphics|Iris)|AMD Radeon(?:\(TM\))? Graphics|Radeon.*(?:Vega|[6789]80M)|llvmpipe|lavapipe|SwiftShader|software|Microsoft Basic Render)");}
         static string DetectDevice(string executable,string preference){
             try {
                 var info=new ProcessStartInfo(executable,"--list-devices"){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,RedirectStandardOutput=true,RedirectStandardError=true,StandardOutputEncoding=Encoding.UTF8,StandardErrorEncoding=Encoding.UTF8,WorkingDirectory=Path.GetDirectoryName(executable)};
@@ -95,10 +96,14 @@ namespace MiniAI {
             try {
                 while(!(entered=Monitor.TryEnter(inferenceGate,40))){if(canceled()||disposed)throw new OperationCanceledException();}
                 var chunks=MiniAI.Desktop.TranslationText.Chunks(text,1500);var all=new StringBuilder();Dictionary<string,object> combined=null;bool allCached=true;int reused=0;
-                foreach(var chunk in chunks){string previous=all.ToString();var part=(Dictionary<string,object>)TranslateCore(chunk.Text,target,canceled,progress==null?null:new Action<string>(delegate(string partial){progress(previous+partial);}),mode);all.Append(Convert.ToString(part["text"])).Append(chunk.After);allCached&=Convert.ToBoolean(part["cached"]);reused+=Convert.ToInt32(part["cached_prompt_tokens"]);combined=part;if(Convert.ToBoolean(part["truncated"]))break;}
+                foreach(var chunk in chunks){string previous=all.ToString();var part=(Dictionary<string,object>)TranslateRecoverable(chunk.Text,target,canceled,progress==null?null:new Action<string>(delegate(string partial){progress(previous+partial);}),mode);all.Append(Convert.ToString(part["text"])).Append(chunk.After);allCached&=Convert.ToBoolean(part["cached"]);reused+=Convert.ToInt32(part["cached_prompt_tokens"]);combined=part;if(Convert.ToBoolean(part["truncated"]))break;}
                 Guard.Check(combined!=null,"Provide text to translate.");combined=new Dictionary<string,object>(combined);combined["text"]=all.ToString().TrimEnd();combined["cached"]=allCached;combined["cached_prompt_tokens"]=reused;combined["chunks"]=chunks.Count;return combined;
             }
             finally {Interlocked.Decrement(ref pendingRequests);lastUse=DateTime.UtcNow;if(entered)Monitor.Exit(inferenceGate);}
+        }
+        object TranslateRecoverable(string text,string target,Func<bool> canceled,Action<string> progress,string mode){
+            try{return TranslateCore(text,target,canceled,progress,mode);}
+            catch(Exception error){if(!(error is IOException||error is WebException)||device=="CPU"||canceled()||disposed)throw;gpuFailed=true;Stop();return TranslateCore(text,target,canceled,progress,mode);}
         }
         object TranslateCore(string text,string target,Func<bool> canceled,Action<string> progress,string mode) {
             string cacheKey=target+"\0"+mode+"\0"+text;Dictionary<string,object> cached;

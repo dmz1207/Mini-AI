@@ -6,6 +6,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace MiniAI {
     internal sealed class OcrLine {
@@ -30,7 +31,8 @@ namespace MiniAI {
                 var bits=image.LockBits(new Rectangle(0,0,width,height),ImageLockMode.ReadOnly,PixelFormat.Format24bppRgb);
                 try {
                     var data=new byte[Math.Abs(bits.Stride)*height];Marshal.Copy(bits.Scan0,data,0,data.Length);var result=new float[3*width*height];float[] mean={0.485f,0.456f,0.406f},std={0.229f,0.224f,0.225f};
-                    for(int y=0;y<height;y++)for(int x=0;x<width;x++)for(int c=0;c<3;c++){float value=data[y*bits.Stride+x*3+c]/255f;result[c*width*height+y*width+x]=detection?(value-mean[c])/std[c]:(value-0.5f)*2;}
+                    Action<int> row=delegate(int y){for(int x=0;x<width;x++)for(int c=0;c<3;c++){float value=data[y*bits.Stride+x*3+c]/255f;result[c*width*height+y*width+x]=detection?(value-mean[c])/std[c]:(value-0.5f)*2;}};
+                    if(width*height>=262144&&Hardware.OcrThreads>1)Parallel.For(0,height,new ParallelOptions{MaxDegreeOfParallelism=Hardware.OcrThreads},row);else for(int y=0;y<height;y++)row(y);
                     return result;
                 }finally{image.UnlockBits(bits);}
             }

@@ -34,6 +34,7 @@ namespace MiniAI.Desktop {
                 if(command=="text"||command=="mbox"||command=="operatorname"){if(At("*"))pos++;return N(command=="operatorname"?"mi":"mtext",new XAttribute("mathvariant","normal"),Raw().Replace(@"\ "," "));}
                 if(command=="cal"||command=="bf"||command=="rm"||command=="it")return N("mstyle",new XAttribute("mathvariant",command=="cal"?"script":command=="bf"?"bold":command=="it"?"italic":"normal"),Sequence("style"));
                 if(command=="mathscr")command="mathcal";
+                if(command=="scriptstyle"||command=="scriptscriptstyle")return N("mstyle",new XAttribute("displaystyle","false"),new XAttribute("scriptlevel",command=="scriptstyle"?"1":"2"),Sequence("style"));
                 if(command=="mathrm"||command=="mathit"||command=="mathbf"||command=="mathbb"||command=="mathcal"||command=="mathsf"||command=="mathtt"||command=="boldsymbol")return N("mstyle",new XAttribute("mathvariant",command=="mathbf"||command=="boldsymbol"?"bold":command=="mathit"?"italic":command=="mathbb"?"double-struck":command=="mathcal"?"script":command=="mathsf"?"sans-serif":command=="mathtt"?"monospace":"normal"),Arg());
                 if(command=="left"){string left=Delimiter();var content=Sequence(@"\right");if(!At(@"\right"))throw new FormatException("Missing right delimiter.");pos+=6;return Fence(content,left,Delimiter());}
                 if(command=="begin")return Environment(Raw());

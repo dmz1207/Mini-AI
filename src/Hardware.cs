@@ -4,11 +4,12 @@ using System.Runtime.InteropServices;
 namespace MiniAI {
     internal static class Hardware {
         [DllImport("kernel32.dll",SetLastError=true)]static extern bool GetLogicalProcessorInformationEx(int relationship,IntPtr buffer,ref uint size);
-        internal static readonly int PhysicalCores=CountCores();
+        internal static readonly int PhysicalCores=Math.Min(Math.Max(1,Environment.ProcessorCount),CountCores());
         internal static readonly int LogicalThreads=Math.Max(1,Environment.ProcessorCount);
         // Default to physical cores. Extra SMT threads can slow the STQ decode
         // loop; the measured laptop case was faster with four than eight.
         internal static readonly int InferenceThreads=ConfiguredThreads();
+        internal static readonly int OcrThreads=Math.Max(1,Math.Min(32,PhysicalCores));
         static int ConfiguredThreads() {
             int configured;
             if(Int32.TryParse(Environment.GetEnvironmentVariable("MINIAI_TRANSLATION_THREADS"),out configured)&&configured>0)

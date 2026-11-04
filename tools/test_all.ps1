@@ -16,6 +16,8 @@ try {
         Start-Sleep -Milliseconds 100
     }
     if(-not $connection){throw 'The local test service did not start.'}
+    & $Python (Join-Path $PSScriptRoot 'test_ocr_cache.py') --root $Root --output $output
+    if($LASTEXITCODE -ne 0){throw 'OCR cache and lazy-loading checks failed.'}
     & $Python (Join-Path $PSScriptRoot 'test_service.py') --root $Root --output $output --translation
     if($LASTEXITCODE -ne 0){throw 'Service integration checks failed.'}
     & $Python (Join-Path $PSScriptRoot 'test_streaming.py') --root $Root --output $output
@@ -26,6 +28,7 @@ try {
     & $Python (Join-Path $PSScriptRoot 'test_formula_service.py') --root $Root --image (Join-Path $output 'formulas\formula-preview.png') --output $output
     if($LASTEXITCODE -ne 0){throw 'Dedicated formula OCR checks failed.'}
     if($Desktop){& (Join-Path $PSScriptRoot 'test_desktop.ps1') -Root $Root -OutputDirectory (Join-Path $output 'desktop'); & (Join-Path $PSScriptRoot 'test_bubbles.ps1') -Root $Root -OutputDirectory (Join-Path $output 'bubbles'); & (Join-Path $PSScriptRoot 'test_images.ps1') -Root $Root -OutputDirectory (Join-Path $output 'images')}
+    & (Join-Path $PSScriptRoot 'test_gpu_fallback.ps1') -Root $Root -OutputDirectory (Join-Path $output 'gpu-fallback')
 } finally {
     if($connection -and $connection.pid -eq $process.Id) {
         try{Invoke-RestMethod ($connection.url+'/v1/shutdown') -Method Post -ContentType 'application/json' -Headers @{Authorization=('Bearer '+$connection.token)} -Body '{}' | Out-Null}catch{}

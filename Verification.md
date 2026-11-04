@@ -1,3 +1,37 @@
+# Verification — Mini-AI 1.0.2
+
+Verified locally on 2026-11-04: **233 focused checks** (49 service, 38 stream/cancel,
+38 language targets, 40 formula/MathML/UI, 12 formula endpoint, 11 desktop,
+15 bubble, 12 image OCR/translation, 11 cache/lazy-loading, 7 GPU policy/failure).
+The simulated GPU fails an inference, then the actual bundled Hy CPU backend
+completes the translation. No new physical GPU speed claim is made.
+
+Mini PDF 0.12.5 passed 906 native regression assertions and 46 capture/Word-AI
+assertions, including scanned/native scientific PDF equations in both Word
+layouts, text/image defaults without an add-on, exact copying, edit retention,
+mode cancellation and unchanged source PDFs. MathType itself was unavailable.
+
+On the local i7-8565U, a warmed ordinary text capture took 1.41 seconds versus
+2.74 seconds in the earlier cold automatic path. Exact repeated text/formula
+requests took roughly 0.002–0.036 seconds after caching, versus 0.45–1.44 seconds
+for repeated model execution. These are small local controls, not general
+benchmarks; first-use extraction, deferred formula initialization and different
+images still take time. Returned text and formula classification were unchanged
+in the compared controls. Existing weights, OCR preprocessing arithmetic and
+extended ONNX graph optimizations are retained.
+
+The complete package now includes the pinned Vulkan runtime. Automatic mode
+prefers detected discrete devices, leaves known integrated/software renderers
+on CPU, and falls back after GPU startup/inference failure. Actual discrete
+hardware performance remains unverified. ONNX OCR uses CPU vector kernels and
+physical-core threads; GPU offload here refers to Hy translation, not OCR.
+
+The final EXE has separate extraction, dependency, repair, inference, sharing and
+cleanup evidence in the release's portable-checks.json. Formula structure and
+completion are not symbol-accuracy scores; review recognized TeX and Word math.
+
+---
+
 # Verification — Mini-AI 1.0.1
 
 The 1.0.1 revision adds glyph-relative row geometry, fraction/bracket protection,

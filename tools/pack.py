@@ -9,7 +9,7 @@ def sha256(path):
         for block in iter(lambda:stream.read(1024*1024),b''):result.update(block)
     return result.hexdigest()
 
-def package(root,output,with_vulkan=False):
+def package(root,output,with_vulkan=True):
     root=Path(root).resolve();output=Path(output).resolve();output.parent.mkdir(parents=True,exist_ok=True)
     documents=['MiniAI.exe','README.md','README.zh-CN.md','LICENSE','API.md','Models.md','THIRD-PARTY.md','RELEASE.md','Verification.md','verification.json','assets.json']
     paths=[root/name for name in documents]
@@ -43,4 +43,4 @@ def package(root,output,with_vulkan=False):
     output.with_suffix('.json').write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8');print(json.dumps(record),flush=True)
 
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--with-vulkan',action='store_true',help='Include the optional GPU runtime; CPU-only is the compact default.');args=parser.parse_args();package(args.root,args.output,args.with_vulkan)
+    parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--with-vulkan',action='store_true',default=True,help='Include the Vulkan GPU runtime (default).');parser.add_argument('--cpu-only',dest='with_vulkan',action='store_false',help='Developer CPU-only package without the Vulkan runtime.');args=parser.parse_args();package(args.root,args.output,args.with_vulkan)

@@ -17,6 +17,7 @@ namespace MiniAI {
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate IntPtr MemoryFn(int allocator,int memory,out IntPtr result);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate IntPtr SessionFn(IntPtr env,[MarshalAs(UnmanagedType.LPWStr)]string path,IntPtr options,out IntPtr result);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate IntPtr SettingFn(IntPtr options,int value);
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate IntPtr ConfigFn(IntPtr options,[MarshalAs(UnmanagedType.LPStr)]string key,[MarshalAs(UnmanagedType.LPStr)]string value);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate IntPtr PointerFn(IntPtr value);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate void ReleaseFn(IntPtr value);
         [UnmanagedFunctionPointer(CallingConvention.Winapi)]delegate IntPtr FreeFn(IntPtr allocator,IntPtr value);
@@ -57,7 +58,12 @@ namespace MiniAI {
             internal Session(OfflineRuntime owner,string path,int inputCount,int outputCount) {
                 runtime=owner;IntPtr options=IntPtr.Zero;
                 try {
-                    owner.Check(owner.Fn<OutFn>(10)(out options));owner.Check(owner.Fn<SettingFn>(23)(options,2));owner.Check(owner.Fn<SettingFn>(24)(options,Hardware.PhysicalCores));
+                    owner.Check(owner.Fn<OutFn>(10)(out options));owner.Check(owner.Fn<SettingFn>(23)(options,2));owner.Check(owner.Fn<SettingFn>(24)(options,Hardware.OcrThreads));
+                    // Models run sequentially; idle encoder/detector pools must
+                    // not compete with the active decoder or translation engine.
+                    owner.Check(owner.Fn<SettingFn>(25)(options,1));
+                    owner.Check(owner.Fn<ConfigFn>(130)(options,"session.intra_op.allow_spinning","0"));
+                    owner.Check(owner.Fn<ConfigFn>(130)(options,"session.inter_op.allow_spinning","0"));
                     owner.Check(owner.Fn<SessionFn>(7)(owner.env,Path.GetFullPath(path),options,out handle));
                     inputNames=new IntPtr[inputCount];outputNames=new IntPtr[outputCount];
                     for(int i=0;i<inputNames.Length;i++)owner.Check(owner.Fn<NameFn>(36)(handle,new UIntPtr((uint)i),owner.allocator,out inputNames[i]));

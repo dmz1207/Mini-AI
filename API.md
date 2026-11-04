@@ -17,3 +17,8 @@ With `stream:true`, responses are newline-delimited JSON, starting with a status
 Hy fast mode uses greedy decoding, while quality uses low-temperature sampling. Both are token-streamed, retain the loaded process, reuse prompt KV state and have bounded independent caches. Results include `cached`, `truncated`, `chunks`, `cached_prompt_tokens`, `threads`, `physical_cores`, `cpu_isa` and `device`. Check `truncated` and surface errors rather than silently discarding the end of a selection. Long text is split into bounded chunks without losing paragraph order.
 
 The service accepts two concurrent requests; model execution itself is serialized as needed to avoid memory/thread oversubscription. A UI should cancel the previous selection, ignore callbacks from old generations, keep the current bubble while work is pending, and allow explicit pin/close. Mini PDF and Mini-AI share that implementation.
+
+
+## 1.0.2 performance details
+
+`/health` includes `formula_loaded`, `ocr_threads`, `ocr_inferences` and `ocr_cache_hits`. These are counts/status only, not stored image or document contents. `/v1/ocr` keeps at most four exact-image replies in memory, with separate quality/formula-mode keys. Repeated requests return the same complete response without native inference. Idle/disposal removes cached data; no new OCR result files are created. Ordinary OCR prewarms independently; formula graphs remain lazy.

@@ -1,3 +1,17 @@
+# Mini-AI 1.0.2
+
+Performance and integration maintenance update. Existing OCR, formula and Hy-MT2 weights are unchanged.
+
+- Warm ordinary OCR at low priority; load formula graphs only for an actual formula candidate or an explicit formula request.
+- Reuse four recent image replies in memory, keyed by exact image bytes, OCR quality and recognition mode. Concurrent identical requests share one inference. No screenshot results are written to disk.
+- Use the physical-core ONNX budget, bounded parallel pixel conversion and sleeping idle model pools. Preserve the established graph optimizations and floating-point preprocessing.
+- Include the pinned Vulkan runtime in the complete EXE. Automatic mode prefers a detected discrete GPU, keeps known weak/integrated/software devices on CPU, and falls back to CPU on backend failure. CPU/explicit-device overrides remain available. No local discrete GPU benchmark is claimed.
+- Export scriptstyle/smaller-script formulas as editable MathML. Mini PDF 0.12.5 adds capture-to-text/LaTeX and selectable image/native-equation Word export.
+
+Formula symbol recognition still requires review. This update does not retrain, requantize or replace the existing models.
+
+---
+
 # Mini-AI 1.0.1
 
 Formula layout and export maintenance update. The bundled OCR and Hy-MT2 model

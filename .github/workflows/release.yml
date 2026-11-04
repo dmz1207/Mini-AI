@@ -4,7 +4,7 @@ on:
     inputs:
       version:
         description: 'Release tag'
-        default: 'v1.0.1'
+        default: 'v1.0.2'
         required: true
       publish:
         description: 'Publish or replace release binaries after verification'
