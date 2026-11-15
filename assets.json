@@ -177,48 +177,80 @@
     ]
   },
   "formula": {
-    "engine": "RapidLaTeX OCR ONNX",
-    "license": "MIT",
-    "upstream_repo": "inYourOwnBrowser/rapid-latex-ocr-onnx",
-    "upstream_revision": "0d0a23977b50433b07cdf95513ed7b7e45d3a761",
+    "engine": "Texo-distill Q8_0",
+    "license": "AGPL-3.0",
+    "upstream_repo": "cstr/texo-distill-gguf",
+    "upstream_revision": "c28c64819b4ddf621d0c77c8c31c0fafb0c28b7a",
     "files": [
       {
-        "path": "models/formula/encoder.onnx",
-        "file": "encoder.onnx",
-        "bytes": 89008136,
-        "sha256": "01bf5dc25539ca0cd5b1bd29296ea495977a6ba5f629dc4178277809d26e5e7d",
+        "path": "models/formula/texo-distill-q8_0.gguf",
+        "file": "texo-distill-q8_0.gguf",
+        "bytes": 22739744,
+        "sha256": "546cd4acad17f316566649968f50778c0aef8f8646714892cca606e49fe283f9",
         "urls": [
-          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/encoder.onnx"
-        ]
-      },
-      {
-        "path": "models/formula/decoder.onnx",
-        "file": "decoder.onnx",
-        "bytes": 50952726,
-        "sha256": "bd695497bf1b22279b7626f5916c79226e1e244c84355f8da7edfd2d921d0072",
-        "urls": [
-          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/decoder.onnx"
-        ]
-      },
-      {
-        "path": "models/formula/image_resizer.onnx",
-        "file": "image_resizer.onnx",
-        "bytes": 38967751,
-        "sha256": "e0b075c39700f64d50400f39c8fc186bbb3b5d84d31864008313f376603aca9d",
-        "urls": [
-          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/image_resizer.onnx"
-        ]
-      },
-      {
-        "path": "models/formula/tokenizer.json",
-        "file": "tokenizer.json",
-        "bytes": 24174,
-        "sha256": "1dc27b18d6a518d0d5ff3f4bb7bd98521fe80ad39e5b2a246d4109f1bb9d5019",
-        "urls": [
-          "https://huggingface.co/inYourOwnBrowser/rapid-latex-ocr-onnx/resolve/0d0a23977b50433b07cdf95513ed7b7e45d3a761/tokenizer.json"
+          "https://huggingface.co/cstr/texo-distill-gguf/resolve/c28c64819b4ddf621d0c77c8c31c0fafb0c28b7a/texo-distill-q8_0.gguf"
         ]
       }
-    ]
+    ],
+    "runtime": {
+      "version": "v0.17.15",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/releases/download/v0.17.15/crispembed-windows-x86_64.zip",
+      "bytes": 12887275,
+      "sha256": "3bbf1d415d8796c49b3ffab61bd33b54a930824da2b77f219875986bb2426c67",
+      "files": [
+        {
+          "path": "runtime/formula/crispembed.dll",
+          "bytes": 363520,
+          "sha256": "72567c5cddff08c5e379a920987895748e898aa3c06171d1d3e71017e54d7578",
+          "build": true
+        },
+        {
+          "path": "runtime/formula/ggml.dll",
+          "bytes": 68608,
+          "sha256": "9030cb66080d2e0729f4be96b90d63e1985f7a80df1370a884dbd46c2e28672c",
+          "entry": "ggml.dll"
+        },
+        {
+          "path": "runtime/formula/ggml-base.dll",
+          "bytes": 668672,
+          "sha256": "e77f068312fa2b76b98366a005da7d1a19b72bb7a3500737c41a97fa122f7f9a",
+          "entry": "ggml-base.dll"
+        },
+        {
+          "path": "runtime/formula/ggml-cpu.dll",
+          "bytes": 934912,
+          "sha256": "f82990b1670537682515b5ba4f28bbf6ad74645ac7f3033d2676bf5c3319bd4c",
+          "entry": "ggml-cpu.dll"
+        },
+        {
+          "path": "runtime/formula/msvcp140.dll",
+          "bytes": 557728,
+          "sha256": "0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9",
+          "copy_from": "runtime/msvcp140.dll"
+        },
+        {
+          "path": "runtime/formula/vcruntime140.dll",
+          "bytes": 124544,
+          "sha256": "d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066",
+          "copy_from": "runtime/vcruntime140.dll"
+        },
+        {
+          "path": "runtime/formula/vcruntime140_1.dll",
+          "bytes": 49792,
+          "sha256": "1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f",
+          "copy_from": "runtime/vcruntime140_1.dll"
+        }
+      ],
+      "build": {
+        "name": "w64devkit-x64-2.11.0.7z.exe",
+        "url": "https://github.com/skeeto/w64devkit/releases/download/v2.11.0/w64devkit-x64-2.11.0.7z.exe",
+        "bytes": 68801240,
+        "sha256": "54c2bb9962e8a30c8270e34c5efc3d5fee579f53087fa7d435b95fbba2af7b2b",
+        "compiler": "GCC 16.2.0, w64devkit 2.11.0",
+        "source": "native/formula",
+        "ggml_revision": "3a27b6c665b191cb230be367db5c52d81dd3e2ac"
+      }
+    }
   },
   "ocr_archive": {
     "url": "https://github.com/dmz1207/Mini-AI/releases/download/v1.0.0/MiniAI-ocr-models.zip",

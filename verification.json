@@ -1,56 +1,86 @@
 {
-  "version": "1.0.2",
-  "date": "2026-11-04",
-  "platform": "Windows 10/11 x64, .NET Framework 4.8",
-  "hardware": "Intel Core i7-8565U, 4 physical / 8 logical cores, Intel UHD 620",
-  "default_backend": "Automatic discrete Vulkan GPU with CPU fallback; known weak integrated/software devices stay on CPU. Local inference checks used CPU AVX2.",
-  "translation": "Hy-MT2-1.8B 1.25-bit, all 38 target options",
+  "version": "1.1.0",
+  "date": "2026-11-15",
+  "hardware": "Intel Core i7-8565U, 4 physical / 8 logical cores, AVX2+FMA",
+  "formula_model": {
+    "name": "Texo-distill Q8_0",
+    "bytes": 22739744,
+    "sha256": "546cd4acad17f316566649968f50778c0aef8f8646714892cca606e49fe283f9",
+    "fp16_tested": false
+  },
+  "formula_runtime": {
+    "bytes": 363520,
+    "sha256": "72567c5cddff08c5e379a920987895748e898aa3c06171d1d3e71017e54d7578",
+    "physical_core_workers": 4,
+    "locally_executed": [
+      "baseline",
+      "AVX2+FMA"
+    ],
+    "avx512": "Compiled with runtime CPU/OS dispatch; not executable on the local CPU. Hosted CPU workflow tests it only when available.",
+    "reproducible_build": "Two different output directories produced identical SHA-256 after pinning PE image base and disabling timestamps."
+  },
   "checks": {
-    "service": 49,
-    "streaming_and_cancel": 38,
-    "language_targets": 38,
-    "formula_mathml_ui": 40,
+    "formula_mathml_clipboard_ui": 43,
     "formula_endpoint_structure": 12,
-    "desktop": 11,
-    "bubble_lifecycle": 15,
-    "image_ocr_translation": 12,
-    "ocr_cache_and_lazy_loading": 11,
-    "gpu_policy_and_simulated_failure": 7
+    "native_cancel_and_recovery": 3,
+    "cpu_kernels": "16 shapes each on baseline and AVX2, unaligned inputs/tails; persistent four-worker pool, 100 jobs. AVX-512 explicitly skipped on unsupported local hardware."
   },
-  "focused_checks": 233,
-  "reader": {
-    "version": "0.12.5",
-    "core_assertions": 906,
-    "capture_and_word_ai_assertions": 46
+  "target_formula": {
+    "scope": "Four-line derivation from the user-provided Elsevier paper; all four rows, both L21/L22 terms, accents, fractions and norm bars checked against the image.",
+    "q8_before_cpu_optimization_seconds": {
+      "user-formula.png": 15.378,
+      "user-row-1.png": 3.427,
+      "pdf-formula-300.png": 13.924
+    },
+    "q8_after_cpu_optimization_seconds": {
+      "user-formula.png": 6.587,
+      "user-row-1.png": 1.442,
+      "pdf-formula-300.png": 6.131
+    },
+    "old_model": "Both whole-formula controls reached the external 90-second timeout. Its single-row control was faster but lost symbols.",
+    "mathml": "All three target outputs converted to well-formed editable MathML."
   },
-  "native": {
-    "source_revision": "c828a2e883defef95fd6121ee1586efcce89ad40",
-    "hosted_build_run": 41321718293,
-    "arithmetic_checks": "passed for CPU baseline, AVX2 and Vulkan builds",
-    "gpu_speed_testing": "No new physical GPU inference tests. Automatic selection/failure recovery tested through a simulated device and real CPU inference; the historical UHD 620 run was slower than CPU."
+  "publisher_corpus": {
+    "documents": 30,
+    "cases": 43,
+    "publishers": {
+      "IEEE": {
+        "cases": 8,
+        "completed": 6
+      },
+      "Elsevier": {
+        "cases": 6,
+        "completed": 4
+      },
+      "MDPI": {
+        "cases": 8,
+        "completed": 8
+      },
+      "TaylorFrancis": {
+        "cases": 9,
+        "completed": 8
+      },
+      "Springer": {
+        "cases": 5,
+        "completed": 4
+      },
+      "Wiley": {
+        "cases": 7,
+        "completed": 4
+      }
+    },
+    "completed": 34,
+    "median_seconds": 1.864,
+    "old_model_completed": 36,
+    "old_model_median_seconds": 3.553,
+    "scope": "Identical frozen 144-DPI crops, some containing adjacent/partial prose. Completion is not accuracy. Manual review found substitutions in accents, subscripts and symbols. No exact-match accuracy benchmark or universal improvement is claimed."
   },
+  "translation_and_text_ocr": "Existing Hy-MT2 and PP-OCRv6 weights/runtime payloads are reused verbatim. Prior 1.0.2 full-suite counts are historical, not newly repeated 1.1.0 checks.",
+  "portable_verification": "Final EXE checks are recorded separately after packaging.",
   "limits": [
-    "OCR and translation checks are fixtures and smoke cases, not an accuracy benchmark.",
-    "Formula endpoint fixture verifies exponent structure. Some base symbols/operators in the clean example were substituted; verify and correct recognized TeX.",
-    "MathML clipboard formats and schema were tested; the MathType application was not installed.",
-    "Rare language samples were checked for completion and expected scripts, not native-speaker quality.",
-    "Dense multiline equations and calligraphic symbols remain limited. The user requested retaining the existing formula model; failed recognition offers an editable draft and original-image review."
-  ],
-  "portable_verification": "Separate portable-checks.json is generated from the final distributed EXE, including payload hashes, isolated startup, repair, shared clients and cleanup.",
-  "checks_provenance": "All listed checks repeated locally for 1.0.2, including real model inference. GPU failure uses a test double followed by actual CPU Hy translation, not a physical GPU benchmark.",
-  "previous_revision_checks": {
-    "date": "2026-11-04",
-    "formula_mathml_ui": 40,
-    "ocr_service_without_translation": 32,
-    "formula_endpoint_structure": 12,
-    "private_papers": 11,
-    "private_formula_crops": 14,
-    "publisher_families": 7,
-    "baseline_returned_tex": 4,
-    "revised_returned_tex": 9,
-    "unchanged_previous_returns": 4,
-    "per_crop_seconds_limit": 20,
-    "accuracy_claim": false,
-    "models_changed": false
-  }
+    "Difficult formula transcription still requires original-image review. High confidence is not proof of correctness.",
+    "AVX-512 speed and model outputs have not been measured on the local CPU.",
+    "Installed MathType was unavailable; XML/clipboard structures were checked, not an actual MathType paste.",
+    "No new physical GPU benchmark was performed. Private papers and crops are excluded from the repository and release."
+  ]
 }

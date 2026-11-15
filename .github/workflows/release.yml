@@ -1,10 +1,13 @@
 name: Build and publish MiniAI
 on:
+  push:
+    branches: [main]
+    paths: ['release.json']
   workflow_dispatch:
     inputs:
       version:
         description: 'Release tag'
-        default: 'v1.0.2'
+        default: 'v1.1.0'
         required: true
       publish:
         description: 'Publish or replace release binaries after verification'
@@ -19,6 +22,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       PYTHONDONTWRITEBYTECODE: '1'
+      MINIAI_RELEASE_VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
@@ -37,6 +41,15 @@ jobs:
         run: |
           python tools/check_dependencies.py --root . --output work/dependency-checks.json
           if ($LASTEXITCODE -ne 0) { throw 'Unbundled native dependency' }
+      - name: Check formula CPU kernels on the runner
+        shell: pwsh
+        run: |
+          $compiler=Join-Path $PWD 'work/native-toolchain/w64devkit/bin/g++.exe'
+          $test=Join-Path $env:RUNNER_TEMP 'formula-cpu-tests.exe'
+          & $compiler -std=c++17 -O3 -ffp-contract=off -march=x86-64 -mtune=generic -static native/formula/cpu_tests.cpp -o $test
+          if($LASTEXITCODE -ne 0){throw 'CPU check compilation failed'}
+          & $test
+          if($LASTEXITCODE -ne 0){throw 'CPU numerical checks failed'}
       - name: Test offline OCR, streaming, cancellation and desktop interaction
         shell: pwsh
         run: |
@@ -62,11 +75,12 @@ jobs:
           path: work/tests/
           retention-days: 7
       - name: Publish the verified release
-        if: inputs.publish == true
+        if: inputs.publish == true || github.event_name == 'push'
         shell: pwsh
         run: |
-          $tag = '${{ inputs.version }}'
-          if (-not $tag) { $tag = $env:GITHUB_REF_NAME }
+          $tag = $env:MINIAI_RELEASE_VERSION
+          if (-not $tag) { $tag = (Get-Content release.json -Raw | ConvertFrom-Json).version }
+          if ($tag -notmatch '^v\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$') { throw 'Invalid release tag' }
           Copy-Item RELEASE.md dist/release-notes.md
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {

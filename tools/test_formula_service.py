@@ -9,7 +9,7 @@ def run(root,image,output):
         started=time.perf_counter()
         request=urllib.request.Request(state['url']+'/v1/ocr',data=data,headers={'Content-Type':'application/json','Authorization':'Bearer '+state['token']})
         with opener.open(request,timeout=120) as response:value=json.load(response)
-        assert value['model']=='RapidLaTeX OCR' and value['formula_count']==1 and value['lines'][0]['kind']=='formula',value
+        assert value['model']=='Texo Q8_0' and value['formula_count']==1 and value['lines'][0]['kind']=='formula',value
         tex=value['lines'][0]['tex'];compact=re.sub(r'\s+','',tex);assert r'e^{-t}' in compact and r'e^{-2t}' in compact,tex
         assert value['width']>100 and value['height']>30
         records.append({'seconds':round(time.perf_counter()-started,3),'tex':tex,'model':value['model'],'formula_count':value['formula_count']});print(json.dumps(records[-1],ensure_ascii=True),flush=True)

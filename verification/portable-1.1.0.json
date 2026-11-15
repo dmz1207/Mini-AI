@@ -1,0 +1,33 @@
+{
+  "assertions": 24,
+  "checks": [
+    "developer extraction succeeds without Python on PATH",
+    "every payload file matches its embedded SHA-256",
+    "EXE, DLL and PYD dependency closure is complete",
+    "missing OCR dependency is repaired",
+    "damaged formula OCR model is repaired",
+    "verified models are reused within an extraction session",
+    "Hy-MT2, text OCR and formula OCR run from an isolated Unicode folder and system-only PATH",
+    "actual fast English-to-Chinese translation",
+    "actual quality Chinese-to-English translation",
+    "actual photo OCR uses bundled dependencies",
+    "formula-aware OCR keeps ordinary text classified as text",
+    "actual Texo Q8 formula inference runs from the distributed EXE",
+    "formula CPU dispatch reports the active supported kernel and thread budget",
+    "instant API OCR and translation leave no result files",
+    "regular ocr result is saved outside the temporary runtime",
+    "regular translation result is saved outside the temporary runtime",
+    "normal exit removes the extracted models, runtime, credentials and temporary folder",
+    "cleanup waits for a transient native-file lock to be released",
+    "OCR and translation results survive runtime cleanup",
+    "the standalone EXE is retained",
+    "another active client prevents premature service shutdown and cleanup",
+    "cleanup preserves unrecognized user files",
+    "the final client release cleans owned model and runtime files",
+    "no unfinished extraction files remain"
+  ],
+  "startup_seconds": 5.294,
+  "exe_bytes": 607189558,
+  "auto_cleanup": true,
+  "instant_results_saved": false
+}

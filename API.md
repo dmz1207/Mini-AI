@@ -22,3 +22,7 @@ The service accepts two concurrent requests; model execution itself is serialize
 ## 1.0.2 performance details
 
 `/health` includes `formula_loaded`, `ocr_threads`, `ocr_inferences` and `ocr_cache_hits`. These are counts/status only, not stored image or document contents. `/v1/ocr` keeps at most four exact-image replies in memory, with separate quality/formula-mode keys. Repeated requests return the same complete response without native inference. Idle/disposal removes cached data; no new OCR result files are created. Ordinary OCR prewarms independently; formula graphs remain lazy.
+
+## 1.1.0 formula backend
+
+Formula-only replies identify `model: "Texo Q8_0"`. `/health` additionally reports `formula_engine`, `formula_cpu` (populated after inference), and `formula_threads`. These refer to the formula backend; translation and ordinary OCR retain independent runtimes. The formula helper remains lazy and can be restarted after cancellation. No source screenshot or formula text is included in health diagnostics.

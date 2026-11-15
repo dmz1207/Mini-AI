@@ -10,6 +10,8 @@ namespace MiniAI {
         // loop; the measured laptop case was faster with four than eight.
         internal static readonly int InferenceThreads=ConfiguredThreads();
         internal static readonly int OcrThreads=Math.Max(1,Math.Min(32,PhysicalCores));
+        internal static readonly int FormulaThreads=ConfiguredFormulaThreads();
+        static int ConfiguredFormulaThreads(){int count;if(Int32.TryParse(Environment.GetEnvironmentVariable("MINIAI_FORMULA_THREADS"),out count)&&count>0)return Math.Max(1,Math.Min(32,count));return Math.Max(1,Math.Min(32,PhysicalCores));}
         static int ConfiguredThreads() {
             int configured;
             if(Int32.TryParse(Environment.GetEnvironmentVariable("MINIAI_TRANSLATION_THREADS"),out configured)&&configured>0)

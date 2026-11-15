@@ -1,0 +1,46 @@
+name: Formula CPU kernels
+on:
+  push:
+    paths:
+      - 'native/formula/**'
+      - '.github/workflows/formula-cpu.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simd:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Check baseline, AVX2 and AVX-512 when available
+        run: |
+          g++ -std=c++17 -O3 -ffp-contract=off -march=x86-64 -mtune=generic -pthread native/formula/cpu_tests.cpp -o /tmp/miniai-cpu-tests
+          /tmp/miniai-cpu-tests
+          MINIAI_FORMULA_CPU=scalar /tmp/miniai-cpu-tests
+          MINIAI_FORMULA_CPU=avx2 /tmp/miniai-cpu-tests
+          MINIAI_FORMULA_CPU=avx512 /tmp/miniai-cpu-tests
+  windows-simd:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Prepare the pinned temporary compiler
+        shell: pwsh
+        run: |
+          $file=Join-Path $env:RUNNER_TEMP 'w64devkit.7z.exe'
+          Invoke-WebRequest 'https://github.com/skeeto/w64devkit/releases/download/v2.11.0/w64devkit-x64-2.11.0.7z.exe' -OutFile $file
+          if((Get-FileHash $file -Algorithm SHA256).Hash.ToLower() -ne '54c2bb9962e8a30c8270e34c5efc3d5fee579f53087fa7d435b95fbba2af7b2b'){throw 'Compiler checksum mismatch'}
+          & $file -y ('-o'+$env:RUNNER_TEMP)
+          if($LASTEXITCODE -ne 0){throw 'Compiler extraction failed'}
+      - name: Test the real Windows CPU paths
+        shell: pwsh
+        run: |
+          Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores
+          $compiler=Join-Path $env:RUNNER_TEMP 'w64devkit/bin/g++.exe'
+          $test=Join-Path $env:RUNNER_TEMP 'cpu-tests.exe'
+          & $compiler -std=c++17 -O3 -ffp-contract=off -march=x86-64 -mtune=generic -static native/formula/cpu_tests.cpp -o $test
+          if($LASTEXITCODE -ne 0){throw 'CPU test compilation failed'}
+          foreach($mode in @('auto','scalar','avx2','avx512')){
+            $env:MINIAI_FORMULA_CPU=$mode
+            & $test
+            if($LASTEXITCODE -ne 0){throw ('CPU check failed: '+$mode)}
+          }

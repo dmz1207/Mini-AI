@@ -1,3 +1,17 @@
+# Mini-AI 1.1.0
+
+Replace formula recognition with Texo-distill Q8_0 while retaining PP-OCRv6 text recognition and Hy-MT2 translation.
+
+- Use a pinned 22.7 MB quantized formula model and a formula-only native library instead of the previous formula encoder/decoder/resizer files.
+- Cache fixed decoder weights and use persistent workers with a physical-core default. Formula decoder kernels select AVX-512 or AVX2+FMA when supported; unsupported instructions are never forced. AVX-512 is compiled but was not executable on the local i7-8565U.
+- Align input preprocessing with Texo and retain confident equation rows, fractions, accents and brackets. Preserve double norm bars in editable MathML.
+- Isolate native work in an owned helper so cancellation can interrupt inference and subsequent requests recover. Repeated exact requests still reuse the existing in-memory service cache.
+- Include source, hashes, licenses and focused old/new CPU measurements. No FP16 comparison was performed. Publisher-crop completion is reported separately from transcription accuracy; difficult mathematics still needs review.
+
+See Verification.md for actual tested scope. The installed MathType application was not available for a paste test; exported MathML structure and clipboard formats are checked locally.
+
+---
+
 # Mini-AI 1.0.2
 
 Performance and integration maintenance update. Existing OCR, formula and Hy-MT2 weights are unchanged.

@@ -86,6 +86,44 @@ def ocr_assets(root,manifest):
             target.parent.mkdir(parents=True,exist_ok=True);pending=target.with_suffix(target.suffix+'.part');pending.write_bytes(data);os.replace(pending,target)
     print('Verified pinned OCR dependency archive.',flush=True)
 
+def formula_runtime(root,manifest):
+    native=manifest.get('formula',{}).get('runtime')
+    if not native:return
+    files=native['files'];missing=[f for f in files if not (root/f['path']).exists() or digest(root/f['path'])!=f['sha256']]
+    if not missing:return
+    archive=root/'work/downloads/texo-runtime-windows-x64.zip'
+    bundled=[f for f in missing if not f.get('copy_from') and not f.get('build')]
+    if bundled:
+        fetch([native['url']],archive,native['sha256'],native['bytes'])
+        with zipfile.ZipFile(archive) as source:
+            for item in bundled:
+                target=(root/item['path']).resolve()
+                if not target.is_relative_to(root):raise ValueError('Invalid Texo runtime destination')
+                data=source.read(item['entry'])
+                if len(data)!=item['bytes'] or hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('Texo runtime checksum mismatch')
+                target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+    for item in missing:
+        if not item.get('copy_from'):continue
+        source=(root/item['copy_from']).resolve();target=(root/item['path']).resolve()
+        if not source.is_relative_to(root) or not target.is_relative_to(root):raise ValueError('Invalid Texo shared dependency path')
+        data=source.read_bytes()
+        if len(data)!=item['bytes'] or hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('Texo VC runtime checksum mismatch')
+        target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+    if any(item.get('build') for item in missing):
+        build=native['build'];compiler_archive=root/'work/downloads'/build['name']
+        fetch([build['url']],compiler_archive,build['sha256'],build['bytes'])
+        compiler_folder=root/'work/native-toolchain';compiler_folder.mkdir(parents=True,exist_ok=True)
+        import subprocess
+        creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0)
+        subprocess.run([str(compiler_archive),'-y','-o'+str(compiler_folder)],check=True,creationflags=creationflags,stdout=subprocess.DEVNULL)
+        compiler=compiler_folder/'w64devkit/bin/g++.exe'
+        source_root=Path(__file__).resolve().parents[1]
+        subprocess.run(['powershell.exe','-NoProfile','-ExecutionPolicy','Bypass','-File',str(source_root/'native/formula/build.ps1'),'-Compiler',str(compiler),'-Runtime',str(root/'runtime/formula')],check=True,creationflags=creationflags)
+    for item in files:
+        target=root/item['path']
+        if not target.is_file() or target.stat().st_size!=item['bytes'] or digest(target)!=item['sha256']:raise ValueError('Final Texo runtime checksum mismatch: '+item['path'])
+    print('Texo Q8_0 native runtime verified.',flush=True)
+
 def install(root):
     root=Path(root).resolve();manifest=json.loads((Path(__file__).resolve().parents[1]/'assets.json').read_text(encoding='utf-8'))
     work=root/'work/downloads';work.mkdir(parents=True,exist_ok=True)
@@ -144,7 +182,8 @@ def install(root):
                 break
             except Exception:
                 if not direct:raise
-    print('Hy-MT2/STQ, text OCR, formula OCR and ONNX Runtime verified. Add app-local VC++ DLLs from the release build.',flush=True)
+    formula_runtime(root,manifest)
+    print('Hy-MT2/STQ, text OCR, Texo Q8_0 and ONNX Runtime verified.',flush=True)
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,default=Path(__file__).resolve().parents[1]);install(parser.parse_args().root)

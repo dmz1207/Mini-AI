@@ -13,6 +13,7 @@ namespace MiniAI {
         [DllImport("user32.dll")]static extern bool SetProcessDPIAware();
         [STAThread]static int Main(string[] args) {
             SetErrorMode(2|0x8000);SetProcessDPIAware();
+            if(args.Length==2&&args[0]=="--formula-worker")return TexoWorker.Run(AppDomain.CurrentDomain.BaseDirectory,args[1]);
             string root=AppDomain.CurrentDomain.BaseDirectory;bool headless=Array.IndexOf(args,"--headless")>=0;int port=17643;
             try {
                 for(int i=0;i+1<args.Length;i++)if(args[i]=="--port")port=Int32.Parse(args[i+1]);

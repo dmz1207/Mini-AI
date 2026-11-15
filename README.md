@@ -22,3 +22,5 @@ Recognition and translation can be wrong. Formula OCR is intended for cropped pr
 Run `./build.ps1` in PowerShell 7 or a UTF-8-aware shell. The .NET Framework compiler and WPF assemblies come from Windows. WpfMath is embedded from the pinned `assets/lib` dependency. `python tools/fetch_models.py --root .` obtains hash-pinned offline assets; Python is a development dependency only. `./tools/test_all.ps1 -Desktop` runs real-model tests. `python tools/pack.py --output dist/MiniAI-windows-x64.zip` and `./tools/build_portable.ps1 -Package dist/MiniAI-windows-x64.zip -Output dist/MiniAI-Portable.exe` create the packages. GitHub Actions also builds the native runtimes from pinned source and checks clean-folder extraction, repair and cleanup.
 
 Source is MIT licensed. Model/runtime notices and their licenses are listed in [THIRD-PARTY.md](THIRD-PARTY.md).
+
+Formula OCR uses the 22.7 MB Texo-distill Q8_0 model and a small native CPU backend with cached weights, persistent physical-core workers, and runtime AVX2/AVX-512 dispatch. See [Models.md](Models.md) for exact provenance and [Verification.md](Verification.md) for measured coverage and limitations.

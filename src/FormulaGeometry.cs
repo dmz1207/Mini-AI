@@ -13,6 +13,7 @@ namespace MiniAI {
             internal readonly List<Rectangle> Rows=new List<Rectangle>();
             internal Rectangle LeftFence,RightFence;
             internal float GlyphHeight;
+            internal bool RelationAligned;
         }
         sealed class Blob {internal Rectangle Box;internal int Area;}
         internal static byte[] Gray(Bitmap image,bool normalize=true) {
@@ -98,6 +99,10 @@ namespace MiniAI {
                 var below=anchors.Where(b=>b.Box.Top>=bar.Box.Bottom-2&&b.Box.Top-bar.Box.Bottom<body*1.5&&b.Box.Left<bar.Box.Right&&b.Box.Right>bar.Box.Left).ToList();
                 if(above.Count>0&&below.Count>0)protectedSpans.Add(Rectangle.FromLTRB(bar.Box.Left,above.Min(b=>b.Box.Top),bar.Box.Right,below.Max(b=>b.Box.Bottom)));
             }
+            // Repeated relation signs give independent evidence of equation rows.
+            // In dense derivations a minus on the next row can otherwise look
+            // like a fraction bar connecting the two rows.
+            if(leftFence==null&&rightFence==null&&AlignedRows(blobs,gray,width,height,inkLeft,inkRight,inkTop,inkBottom,body,scale,plan))return plan;
             var cuts=new List<int>();int run=-1;
             for(int y=inkTop;y<=inkBottom;y++) {
                 bool empty=y<inkBottom&&rows[y]==0;
@@ -124,6 +129,53 @@ namespace MiniAI {
             if(leftFence!=null)plan.LeftFence=Scaled(leftFence.Box,scale,(int)Math.Round(width*scale),(int)Math.Round(height*scale));
             if(rightFence!=null)plan.RightFence=Scaled(rightFence.Box,scale,(int)Math.Round(width*scale),(int)Math.Round(height*scale));
             return plan;
+        }
+        static bool AlignedRows(List<Blob> blobs,byte[] gray,int width,int height,int inkLeft,int inkRight,int inkTop,int inkBottom,float body,double scale,Plan plan){
+            var columns=new bool[width];for(int y=inkTop;y<inkBottom;y++)for(int x=inkLeft;x<inkRight;x++)if(gray[y*width+x]<185)columns[x]=true;
+            List<Rectangle> best=null;int merge=Math.Max(2,(int)(body*.65));
+            for(int x=inkLeft;x<inkRight;){
+                if(!columns[x]){x++;continue;}int left=x;while(x<inkRight&&columns[x])x++;int right=x;
+                if(left>inkLeft+(inkRight-inkLeft)*.4||right-left<body*.45||right-left>body*2.2)continue;
+                var bands=new List<Rectangle>();int first=-1,last=-1;
+                for(int y=inkTop;y<=inkBottom;y++){
+                    bool ink=false;if(y<inkBottom)for(int xx=left;xx<right;xx++)if(gray[y*width+xx]<185){ink=true;break;}
+                    if(ink){if(first<0)first=y;last=y;}
+                    if(first<0||(y<inkBottom&&y-last<=merge))continue;
+                    int bottom=last+1;var pieces=blobs.Where(b=>b.Box.Left>=left&&b.Box.Right<=right&&b.Box.Top>=first&&b.Box.Bottom<=bottom).ToList();
+                    if(pieces.Count==2&&bottom-first>=body*.22&&bottom-first<body*1.3){
+                        var top=pieces.OrderBy(b=>b.Box.Top).First();var low=pieces.OrderByDescending(b=>b.Box.Bottom).First();
+                        if(top!=low&&top.Box.Height<=body*.9&&low.Box.Width>=(right-left)*.6&&low.Box.Height<=Math.Max(3,body*.24))bands.Add(Rectangle.FromLTRB(left,first,right,bottom));
+                    }first=-1;last=-1;
+                }
+                if(bands.Count<2||bands.Count>8)continue;
+                bool close=false,division=false;
+                for(int i=1;i<bands.Count;i++){
+                    double a=(bands[i-1].Top+bands[i-1].Bottom)/2.0,b=(bands[i].Top+bands[i].Bottom)/2.0;
+                    if(b-a<body*1.4){close=true;break;}
+                    // An equality inside a numerator/denominator is not two equations.
+                    if(blobs.Any(p=>p.Box.Width>body*1.5&&p.Box.Height<=Math.Max(3,body*.24)&&p.Box.Left<left&&p.Box.Right>right&&p.Box.Top>a&&p.Box.Bottom<b)){division=true;break;}
+                }
+                if(close||division)continue;if(best==null||bands.Count>best.Count)best=bands;
+            }
+            if(best==null)return false;
+            var boundaries=new List<int>{inkTop};
+            for(int i=1;i<best.Count;i++){
+                double a=(best[i-1].Top+best[i-1].Bottom)/2.0,b=(best[i].Top+best[i].Bottom)/2.0;int middle=(int)Math.Round((a+b)/2),radius=Math.Max(2,(int)((b-a)*.24)),chosen=-1,distance=Int32.MaxValue;
+                for(int cut=Math.Max(best[i-1].Bottom,middle-radius);cut<=Math.Min(best[i].Top,middle+radius);cut++){
+                    bool empty=true;for(int xx=inkLeft;xx<inkRight;xx++)if(gray[cut*width+xx]<185){empty=false;break;}
+                    if(empty&&Math.Abs(cut-middle)<distance){chosen=cut;distance=Math.Abs(cut-middle);}
+                }
+                // Keep an uncertain/tall connected expression intact.
+                if(chosen<0)return false;boundaries.Add(chosen);
+            }
+            boundaries.Add(inkBottom);var result=new List<Rectangle>();
+            for(int i=0;i+1<boundaries.Count;i++){
+                int l=inkRight,r=inkLeft,t=boundaries[i+1],b=boundaries[i];
+                for(int y=boundaries[i];y<boundaries[i+1];y++)for(int x=inkLeft;x<inkRight;x++)if(gray[y*width+x]<185){l=Math.Min(l,x);r=Math.Max(r,x+1);t=Math.Min(t,y);b=Math.Max(b,y+1);}
+                if(r<=l)return false;
+                result.Add(Scaled(Rectangle.FromLTRB(Math.Max(0,l-2),Math.Max(boundaries[i],t-2),Math.Min(width,r+2),Math.Min(boundaries[i+1],b+2)),scale,(int)Math.Round(width*scale),(int)Math.Round(height*scale)));
+            }
+            plan.Rows.AddRange(result);plan.RelationAligned=true;return true;
         }
         static Rectangle Scaled(Rectangle box,double scale,int sourceWidth,int sourceHeight){return Rectangle.Intersect(new Rectangle(0,0,sourceWidth,sourceHeight),Rectangle.FromLTRB((int)Math.Floor(box.Left*scale),(int)Math.Floor(box.Top*scale),(int)Math.Ceiling(box.Right*scale),(int)Math.Ceiling(box.Bottom*scale)));}
     }

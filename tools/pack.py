@@ -13,7 +13,7 @@ def package(root,output,with_vulkan=True):
     root=Path(root).resolve();output=Path(output).resolve();output.parent.mkdir(parents=True,exist_ok=True)
     documents=['MiniAI.exe','README.md','README.zh-CN.md','LICENSE','API.md','Models.md','THIRD-PARTY.md','RELEASE.md','Verification.md','verification.json','assets.json']
     paths=[root/name for name in documents]
-    for folder in ('models/ocr','models/ocr-fast','models/formula','runtime/translation'):
+    for folder in ('models/ocr','models/ocr-fast','models/formula','runtime/formula','runtime/translation'):
         paths.extend(p for p in (root/folder).rglob('*') if p.is_file() and (with_vulkan or folder!='runtime/translation' or 'vulkan' not in p.relative_to(root/folder).parts) and p.name!='cudnn64_9.dll' and p.suffix not in ('.part','.pyi','.h','.a','.lib') and not set(p.relative_to(root/folder).parts)&{'tests','__pycache__','include','test'})
     paths.extend(p for p in (root/'models/translation').glob('*') if p.is_file() and p.name in ('hy-mt2.gguf','model-provenance.json'))
     excluded_licenses=('OPUS','CTranslate','Intel','MKL','oneDNN','OpenMP','SentencePiece')
@@ -25,8 +25,9 @@ def package(root,output,with_vulkan=True):
     lowered=[name.lower() for name in manifest]
     if any('opus' in name or 'ctranslate' in name or 'translation-ct2' in name for name in lowered):raise ValueError('Hy-only release cannot contain OPUS-MT or CTranslate2 assets.')
     if 'models/translation/hy-mt2.gguf' not in manifest:raise FileNotFoundError('Hy-MT2 model is required in the offline package.')
-    for name in ('models/formula/encoder.onnx','models/formula/decoder.onnx','models/formula/image_resizer.onnx','models/formula/tokenizer.json'):
+    for name in ('models/formula/texo-distill-q8_0.gguf','runtime/formula/crispembed.dll','runtime/formula/ggml.dll','runtime/formula/ggml-base.dll','runtime/formula/ggml-cpu.dll'):
         if name not in manifest:raise FileNotFoundError('Formula OCR asset is required: '+name)
+    if any(name.startswith('models/formula/') and name.endswith('.onnx') for name in manifest):raise ValueError('Texo package must not contain the retired formula weights.')
     if not any(name.startswith('runtime/translation/avx2/llama-server') for name in manifest):raise FileNotFoundError('Hy STQ AVX2 runtime is required.')
     check([path for path in paths if path.suffix.lower() in ('.dll','.exe','.pyd')])
     with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as archive:

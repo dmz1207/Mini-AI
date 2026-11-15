@@ -1,5 +1,5 @@
 """Test the distributed EXE, repair, sharing, persistent results and exit cleanup."""
-import argparse,base64,ctypes,hashlib,json,os,shutil,subprocess,threading,time,urllib.request,zipfile
+import argparse,base64,ctypes,hashlib,json,os,re,shutil,subprocess,threading,time,urllib.request,zipfile
 from pathlib import Path
 from check_dependencies import check
 
@@ -33,11 +33,11 @@ def run(exe,output):
     passed(prepare.returncode==0,'developer extraction succeeds without Python on PATH')
     passed(all((root/name).is_file() and hashlib.sha256((root/name).read_bytes()).hexdigest()==value['sha256'] for name,value in manifest.items()),'every payload file matches its embedded SHA-256')
     check([p for p in root.rglob('*') if p.suffix.lower() in ('.exe','.dll','.pyd')]);passed(True,'EXE, DLL and PYD dependency closure is complete')
-    model=root/'models/translation/hy-mt2.gguf';stamp=model.stat().st_mtime_ns;crt=root/'runtime/msvcp140_1.dll';crt.unlink();engine=root/'models/formula/encoder.onnx'
+    model=root/'models/translation/hy-mt2.gguf';stamp=model.stat().st_mtime_ns;crt=root/'runtime/msvcp140_1.dll';crt.unlink();engine=root/'models/formula/texo-distill-q8_0.gguf'
     with engine.open('r+b') as stream:stream.seek(-1,2);value=stream.read(1);stream.seek(-1,2);stream.write(bytes([value[0]^1]))
     repair=subprocess.run([str(launcher),'--extract-only'],cwd=home,env=env,timeout=120,creationflags=0x08000000)
     passed(repair.returncode==0 and crt.exists(),'missing OCR dependency is repaired')
-    passed(hashlib.sha256(engine.read_bytes()).hexdigest()==manifest['models/formula/encoder.onnx']['sha256'],'damaged formula OCR model is repaired')
+    passed(hashlib.sha256(engine.read_bytes()).hexdigest()==manifest['models/formula/texo-distill-q8_0.gguf']['sha256'],'damaged formula OCR model is repaired')
     passed(model.stat().st_mtime_ns==stamp,'verified models are reused within an extraction session')
     process,cold,health=start();saved=[];delayed=None
     try:
@@ -50,6 +50,12 @@ def run(exe,output):
         image=Image.new('RGB',(1400,240),'white');ImageDraw.Draw(image).text((40,70),'The control system remains stable.',font=ImageFont.truetype('C:/Windows/Fonts/arial.ttf',46),fill='black');photo=output/'photo.jpg';image.save(photo,quality=94)
         result=request('/v1/ocr',{'image_base64':base64.b64encode(photo.read_bytes()).decode()});passed('control system' in result['text'],'actual photo OCR uses bundled dependencies')
         formula=request('/v1/ocr',{'image_base64':base64.b64encode(photo.read_bytes()).decode(),'formula':True});passed(formula.get('formula') is True and any(line.get('kind')=='text' for line in formula.get('lines',[])),'formula-aware OCR keeps ordinary text classified as text')
+        fixture=Path(__file__).parent/'fixtures/formula-fractions.png'
+        math=request('/v1/ocr',{'image_base64':base64.b64encode(fixture.read_bytes()).decode(),'formula_only':True})
+        tex=re.sub(r'\s+','',math.get('text',''))
+        passed(math.get('model')=='Texo Q8_0' and math.get('formula_count')==1 and tex.count(r'\frac')==2 and all(part in tex for part in ('x^{2}','a^{2}','y^{2}','b^{2}')),'actual Texo Q8 formula inference runs from the distributed EXE')
+        cpu=request('/health')
+        passed(cpu.get('formula_cpu') in ('AVX-512','AVX2 + FMA','SSE2 baseline') and 1<=cpu.get('formula_threads',0)<=32,'formula CPU dispatch reports the active supported kernel and thread budget')
         folder=home/'MiniAI Results';passed(not folder.exists(),'instant API OCR and translation leave no result files')
         for kind,text,source in [('ocr',result['text'],''),('translation',a['text'],'The control system remains stable.')]:
             value=request('/v1/results',{'kind':kind,'text':text,'source':source,'target':'zh'});path=Path(value['file']);saved.append((path,path.read_bytes()));passed(path.parent==folder and path.is_file(),'regular '+kind+' result is saved outside the temporary runtime')

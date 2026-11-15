@@ -8,7 +8,8 @@ Mini-AI source is MIT licensed. Included components retain their own licenses:
 | Pinned STQ llama.cpp fork | Native inference, CPU and optional Vulkan | `runtime/translation/*/LICENSE-llama.cpp.txt`; MIT; source revision and reproducible loader patch included |
 | PP-OCRv6 / PaddleOCR | Printed text recognition | `licenses/PaddleOCR-Apache-2.0.txt` |
 | RapidOCR / dictionaries | OCR assets and conversion | `licenses/RapidOCR-Apache-2.0.txt` |
-| RapidLaTeXOCR | Formula recognition | `licenses/FormulaOCR-MIT.txt` |
+| Texo-distill Q8_0 | Formula recognition model | `licenses/Texo-AGPL-3.0.txt`; model-card AGPL-3.0, pinned model provenance in `assets.json` |
+| CrispEmbed / ggml | Formula CPU implementation | `licenses/CrispEmbed-LICENSE.txt`, `native/formula/LICENSE.CrispEmbed`, pinned ggml revision and notices; modified source included |
 | ONNX Runtime | OCR execution | `licenses/ONNXRuntime-LICENSE`, `licenses/ONNXRuntime-ThirdPartyNotices.txt` |
 | WpfMath 0.12.0 | Embedded WPF formula preview | `licenses/WpfMath-MIT.txt`, `assets/lib/WpfMath.json` |
 | CMUdict word list | Conservative PDF word dehyphenation | `licenses/CMUdict-LICENSE.txt` |
