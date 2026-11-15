@@ -15,6 +15,9 @@ on:
         default: false
 permissions:
   contents: write
+concurrency:
+  group: miniai-release-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   package:
     runs-on: windows-2022
@@ -81,6 +84,15 @@ jobs:
           $tag = $env:MINIAI_RELEASE_VERSION
           if (-not $tag) { $tag = (Get-Content release.json -Raw | ConvertFrom-Json).version }
           if ($tag -notmatch '^v\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$') { throw 'Invalid release tag' }
+          # A stale commit whose workflows differ from the default branch cannot
+          # create a release with GITHUB_TOKEN. Publish only the tested head.
+          $defaultBranch = gh api "repos/$($env:GITHUB_REPOSITORY)" --jq '.default_branch'
+          if ($LASTEXITCODE -ne 0 -or -not $defaultBranch) { throw 'Cannot resolve the default branch before publishing' }
+          $currentHead = gh api "repos/$($env:GITHUB_REPOSITORY)/git/ref/heads/$defaultBranch" --jq '.object.sha'
+          if ($LASTEXITCODE -ne 0 -or -not $currentHead) { throw 'Cannot verify the current release commit' }
+          if ($currentHead.Trim() -ne $env:GITHUB_SHA) {
+            throw 'This build was superseded. Run the release workflow on the current default-branch commit.'
+          }
           Copy-Item RELEASE.md dist/release-notes.md
           gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
           if ($LASTEXITCODE -ne 0) {
