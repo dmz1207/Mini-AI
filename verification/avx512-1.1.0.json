@@ -1,0 +1,7 @@
+{
+  "date": "2026-11-15",
+  "run": "https://github.com/dmz1207/Mini-AI/actions/runs/43698958902/job/132765595784",
+  "os": "Ubuntu 24.04 x86_64 GitHub-hosted runner",
+  "avx512": "Executed, passed",
+  "coverage": "16 unaligned/tail shapes for baseline, AVX2 and AVX-512; four dispatch modes; persistent four-worker jobs. Kernel numerical checks, not a full AVX-512 model-accuracy/speed benchmark."
+}
