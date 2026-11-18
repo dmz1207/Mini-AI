@@ -7,6 +7,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace MiniAI {
     // A persistent, owned process isolates Texo's ggml library from other
@@ -18,13 +19,20 @@ namespace MiniAI {
         NamedPipeServerStream pipe;
         internal string Cpu {get;private set;}
         internal TexoWorker(string folder){root=Path.GetFullPath(folder);}
-        void Wait(IAsyncResult pending,Func<bool> canceled,int seconds){
+        static Task Observe(Task pending){
+            // A canceled request closes the pipe while its I/O callback is still
+            // pending. FromAsync must finish EndRead/EndWrite; observe that fault
+            // even when the caller has already stopped waiting.
+            pending.ContinueWith(delegate(Task ended){var ignored=ended.Exception;},CancellationToken.None,TaskContinuationOptions.OnlyOnFaulted|TaskContinuationOptions.ExecuteSynchronously,TaskScheduler.Default);
+            return pending;
+        }
+        void Wait(Task pending,Func<bool> canceled,int seconds){
             var timer=Stopwatch.StartNew();
-            while(!pending.AsyncWaitHandle.WaitOne(30)){
+            try{while(!pending.Wait(30)){
                 if(canceled!=null&&canceled())throw new OperationCanceledException();
                 if(process==null||process.HasExited)throw new IOException("Texo worker stopped unexpectedly. / 公式识别进程已退出。");
                 if(timer.Elapsed.TotalSeconds>seconds)throw new IOException("Texo recognition timed out. Try a smaller formula region. / 公式识别超时，请缩小区域。");
-            }
+            }}catch(AggregateException){pending.GetAwaiter().GetResult();throw;}
             if(canceled!=null&&canceled())throw new OperationCanceledException();
         }
         void Start(Func<bool> canceled){
@@ -32,21 +40,24 @@ namespace MiniAI {
             Dispose();string name="MiniAI-Texo-"+Guid.NewGuid().ToString("N");
             var security=new PipeSecurity();security.AddAccessRule(new PipeAccessRule(WindowsIdentity.GetCurrent().User,PipeAccessRights.FullControl,AccessControlType.Allow));
             pipe=new NamedPipeServerStream(name,PipeDirection.InOut,1,PipeTransmissionMode.Byte,PipeOptions.Asynchronous,65536,65536,security);
-            var connection=pipe.BeginWaitForConnection(null,null);
+            // Never close an APM AsyncWaitHandle manually: Windows can signal
+            // the native event before PipeStream.AsyncPSCallback calls Set().
+            // Closing it in that interval terminates the whole service.
+            var channel=pipe;
+            var connection=Observe(Task.Factory.FromAsync(channel.BeginWaitForConnection,channel.EndWaitForConnection,null));
             try{
                 var info=new ProcessStartInfo(Path.Combine(root,"MiniAI.exe"),"--formula-worker "+name){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,WorkingDirectory=root,RedirectStandardOutput=true,RedirectStandardError=true};
                 info.EnvironmentVariables["CRISPEMBED_OFFLINE"]="1";
                 process=Process.Start(info);process.OutputDataReceived+=delegate{};process.ErrorDataReceived+=delegate{};process.BeginOutputReadLine();process.BeginErrorReadLine();
-                group=new ProcessGroup(process);Wait(connection,canceled,15);pipe.EndWaitForConnection(connection);
+                group=new ProcessGroup(process);Wait(connection,canceled,15);
             }catch{Dispose();throw;}
-            finally{connection.AsyncWaitHandle.Close();}
         }
         byte[] Read(int count,Func<bool> canceled){
             var data=new byte[count];int offset=0;
-            while(offset<count){var pending=pipe.BeginRead(data,offset,count-offset,null,null);try{Wait(pending,canceled,60);int read=pipe.EndRead(pending);if(read==0)throw new EndOfStreamException("Texo worker disconnected.");offset+=read;}finally{pending.AsyncWaitHandle.Close();}}
+            while(offset<count){var channel=pipe;int start=offset;var pending=Task<int>.Factory.FromAsync(delegate(AsyncCallback callback,object state){return channel.BeginRead(data,start,count-start,callback,state);},channel.EndRead,null);Wait(Observe(pending),canceled,60);int read=pending.Result;if(read==0)throw new EndOfStreamException("Texo worker disconnected.");offset+=read;}
             return data;
         }
-        void Write(byte[] data,Func<bool> canceled){var pending=pipe.BeginWrite(data,0,data.Length,null,null);try{Wait(pending,canceled,15);pipe.EndWrite(pending);}finally{pending.AsyncWaitHandle.Close();}}
+        void Write(byte[] data,Func<bool> canceled){var channel=pipe;var pending=Observe(Task.Factory.FromAsync(delegate(AsyncCallback callback,object state){return channel.BeginWrite(data,0,data.Length,callback,state);},channel.EndWrite,null));Wait(pending,canceled,15);}
         internal string Recognize(byte[] gray,int width,int height,out float confidence,Func<bool> canceled){
             confidence=0;
             try{

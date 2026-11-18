@@ -1,0 +1,26 @@
+{
+  "version": "1.1.1",
+  "date": "2026-11-18",
+  "failure": "ObjectDisposedException in PipeStream.AsyncPSCallback when canceled APM pipe operations closed AsyncWaitHandle before the callback finished.",
+  "control": {
+    "assembly": "1.1.0.0",
+    "exit_code": -532462766,
+    "result": "Reproduced the reported unhandled SafeHandle exception after canceling a pending pipe read."
+  },
+  "corrected_transport": {
+    "assertions": 22,
+    "exchanges": 1030,
+    "cancellation_cycles": 9,
+    "coverage": "Connect, read and blocked-write cancellation; restart; fragmented frames; bounded handle use; unexpected worker exit.",
+    "scope": "Production TexoWorker transport with a controlled helper; real formula inference is tested separately."
+  },
+  "private_capture_check": {
+    "fresh_inferences": 4,
+    "initial_seconds": [4.431, 3.461, 3.926],
+    "after_disconnected_client_seconds": 5.489,
+    "service_pid_unchanged": true,
+    "content": "Three expressions including two two-branch piecewise definitions; outputs retained the expressions, powers and branch inequalities.",
+    "scope": "One user screenshot, checked against the image. No general formula accuracy claim. The image and output remain local."
+  },
+  "model_weights_and_cpu_kernels_changed": false
+}

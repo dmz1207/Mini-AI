@@ -1,3 +1,13 @@
+# Mini-AI 1.1.1
+
+Fix a formula-worker pipe lifetime race that could terminate the service and leave Mini PDF reporting a closed connection.
+
+- Complete asynchronous pipe operations through callback-backed tasks, with faults observed after cancellation. Keep cancellation, timeouts and worker restart.
+- Add a production-transport regression: the previous build reproduces the same fatal SafeHandle exception; the corrected build passes connect/read/write cancellation and recovery, 1,000 fragmented exchanges, bounded handle usage and worker-exit recovery.
+- Model weights, CPU kernels and decoding settings are unchanged.
+
+---
+
 # Mini-AI 1.1.0
 
 Replace formula recognition with Texo-distill Q8_0 while retaining PP-OCRv6 text recognition and Hy-MT2 translation.

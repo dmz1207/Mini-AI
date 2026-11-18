@@ -4,6 +4,7 @@ $output=Join-Path $Root 'work\tests'
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $env:TEMP=$output; $env:TMP=$output; $env:PYTHONDONTWRITEBYTECODE='1'
 $env:MINIAI_RESULTS_DIR=Join-Path $output 'results'
+& (Join-Path $PSScriptRoot 'test_texo_pipe.ps1') -Root $Root -OutputDirectory (Join-Path $output 'texo-pipe')
 $process=Start-Process -FilePath (Join-Path $Root 'MiniAI.exe') -ArgumentList '--headless --port 0' -WorkingDirectory $Root -WindowStyle Hidden -PassThru
 $connection=$null
 try {
