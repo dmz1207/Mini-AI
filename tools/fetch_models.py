@@ -159,29 +159,16 @@ def install(root):
                 destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(data)
     ort=manifest['onnxruntime'];missing=[item for item in ort['files'] if not (root/item['path']).exists() or digest(root/item['path'])!=item['sha256']]
     if missing:
-        archive=work/'onnxruntime-win-x64-1.20.1.zip'
-        # Verify exact extracted payloads rather than trusting archive metadata.
-        for direct in (True,False):
-            try:
-                opener=urllib.request.build_opener(urllib.request.ProxyHandler({})) if direct else urllib.request.build_opener()
-                with opener.open(ort['url'],timeout=8 if direct else 60) as response,archive.open('wb') as output:
-                    total=0
-                    while True:
-                        data=response.read(1024*1024)
-                        if not data:break
-                        total+=len(data)
-                        if total>100*1024*1024:raise ValueError('Unexpected runtime archive size')
-                        output.write(data)
-                with zipfile.ZipFile(archive) as bundle:
-                    for item in missing:
-                        entry=next(x for x in bundle.infolist() if x.filename.endswith('/lib/'+Path(item['path']).name))
-                        if entry.file_size!=item['bytes']:raise ValueError('Unexpected runtime DLL size')
-                        data=bundle.read(entry)
-                        if hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('Runtime DLL checksum mismatch')
-                        target=root/item['path'];target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
-                break
-            except Exception:
-                if not direct:raise
+        archive=work/'onnxruntime-1.20.1.nupkg'
+        fetch([ort['url']],archive,ort['archive_sha256'],ort['archive_bytes'])
+        with zipfile.ZipFile(archive) as bundle:
+            for item in missing:
+                name=Path(item['path']).name
+                entry=bundle.getinfo('runtimes/win-x64/native/'+name)
+                if entry.file_size!=item['bytes']:raise ValueError('Unexpected runtime DLL size')
+                data=bundle.read(entry)
+                if hashlib.sha256(data).hexdigest()!=item['sha256']:raise ValueError('Runtime DLL checksum mismatch')
+                target=root/item['path'];target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
     formula_runtime(root,manifest)
     print('Hy-MT2/STQ, text OCR, Texo Q8_0 and ONNX Runtime verified.',flush=True)
 

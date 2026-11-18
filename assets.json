@@ -162,7 +162,9 @@
   ],
   "onnxruntime": {
     "version": "1.20.1",
-    "url": "https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-win-x64-1.20.1.zip",
+    "url": "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/1.20.1/microsoft.ml.onnxruntime.1.20.1.nupkg",
+    "archive_bytes": 108611147,
+    "archive_sha256": "9c32108e9a1c78b090a95c2a219f244dd5f067d4caf68fb0f967103f3f20839c",
     "files": [
       {
         "path": "runtime/onnxruntime.dll",
